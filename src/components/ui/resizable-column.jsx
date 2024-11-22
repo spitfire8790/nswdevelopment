@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
+import styles from './resizable-column.module.css';
 
 const ResizableColumn = ({ children, width, onResize }) => {
   const thRef = useRef(null);
@@ -40,17 +41,17 @@ const ResizableColumn = ({ children, width, onResize }) => {
 
   return (
     <th 
-      ref={thRef} 
-      className="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-      style={{ width: width }}
+      ref={thRef}
+      className={styles.resizableColumn}
+      style={{ width }}
     >
       {children}
       <div 
-        className="ResizableColumns-handle"
+        className={styles.resizeHandle}
         onMouseDown={handleMouseDown}
       />
     </th>
   );
 };
 
-export { ResizableColumn };
+export default ResizableColumn;

@@ -37,11 +37,25 @@ export default defineConfig({
 
             proxyReq.setHeader('Accept', 'application/json');
             proxyReq.setHeader('Content-Type', 'application/json');
+
+            console.log('Proxying request:', {
+              method: req.method,
+              url: req.url,
+              headers: proxyReq.getHeaders(),
+              targetUrl: `${proxy.options.target}${req.url.replace('/api/eplanning', '')}`
+            });
           });
-          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
             proxyRes.headers['Access-Control-Allow-Origin'] = '*';
             proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
             proxyRes.headers['Access-Control-Allow-Headers'] = 'PageSize, PageNumber, filters, Content-Type, Accept';
+
+            console.log('Received response:', {
+              method: req.method,
+              url: req.url,
+              status: proxyRes.statusCode,
+              headers: proxyRes.headers
+            });
           });
         }
       }

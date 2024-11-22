@@ -30,6 +30,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Papa from 'papaparse';
+import AnimatedDevLogo from './AnimatedDevLogo';
 
 // Create a simple object for development type mapping
 const devTypesData = [
@@ -467,7 +468,6 @@ const Development = () => {
 
   const fetchPage = async (pageNumber, filters) => {
     try {
-      // Special handling for City of Sydney
       const formattedCouncilName = filters.CouncilName ? 
         filters.CouncilName === "City of Sydney" ? 
           "COUNCIL OF THE CITY OF SYDNEY" : 
@@ -488,35 +488,40 @@ const Development = () => {
         ApplicationLastUpdatedFrom: "2019-02-01"
       };
 
-      // Remove undefined values
-      Object.keys(apiFilters).forEach(key => {
-        if (apiFilters[key] === undefined) {
-          delete apiFilters[key];
-        }
-      });
+      const baseUrl = '/api/eplanning';
+      const url = `${baseUrl}/data/v0/OnlineDA`;
 
-      console.log('Sending filters to API:', JSON.stringify({ filters: apiFilters }, null, 2));
-
-      const headers = new Headers({
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'pagesize': '10000',
-        'pagenumber': pageNumber.toString(),
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'PageSize': '10000',
+        'PageNumber': pageNumber.toString(),
         'filters': JSON.stringify({ filters: apiFilters })
+      };
+
+      console.log('Making request:', { url, headers });
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        credentials: 'same-origin'  // Change this from 'omit'
       });
 
-      const response = await fetch('/api/eplanning/data/v0/OnlineDA', {
-        method: 'GET',
-        headers: headers
+      // Log raw response details
+      console.log('Raw Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', {
+        console.error('Detailed Error:', {
           status: response.status,
           statusText: response.statusText,
           body: errorText,
-          headers: Object.fromEntries(response.headers.entries())
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url
         });
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
@@ -1110,8 +1115,11 @@ const Development = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Header Panel */}
-      <div className="h-[15vh] bg-white border-b border-gray-200 flex items-center px-6">
-        <h1 className="text-2xl font-semibold text-gray-900">NSW Development Applications</h1>
+      <div className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
+        <div className="flex items-center gap-2">
+          <AnimatedDevLogo />
+          <h2 className="text-2xl font-bold">NSW Development Applications</h2>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -1417,9 +1425,20 @@ const Development = () => {
               <div className="flex gap-2">
                 <Button 
                   type="submit" 
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="flex items-center gap-2" 
+                  disabled={loading}
                 >
-                  Search
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4" />
+                      Search
+                    </>
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -1540,8 +1559,8 @@ const Development = () => {
                   >
                     {isLayerLoading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Building layer...
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="font-medium">Building layer...</span>
                       </span>
                     ) : (
                       'Add to Map'

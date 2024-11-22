@@ -1,0 +1,23 @@
+.resizableColumn {
+  position: relative;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(17 24 39);
+}
+
+.resizeHandle {
+  display: inline-block;
+  width: 10px;
+  height: 100%;
+  position: absolute;
+  right: -5px;
+  top: 0;
+  cursor: col-resize;
+  background-color: transparent;
+}
+
+.resizeHandle:hover {
+  background-color: #e5e7eb;
+} 
