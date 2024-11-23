@@ -32,7 +32,7 @@ import L from 'leaflet';
 import Papa from 'papaparse';
 import AnimatedDevLogo from './AnimatedDevLogo';
 import { GeoJSON } from 'react-leaflet';
-import { lgamapping } from '../data/lgamapping';
+import { lgaMapping } from '../data/lgamapping';
 
 // Create a simple object for development type mapping
 const devTypesData = [
@@ -449,17 +449,13 @@ const Development = () => {
   const [areaData, setAreaData] = useState({});
 
   // Add this state for storing map features
-  const [mapFeatures, setMapFeatures] = useState({});
+  const [mapFeatures, setMapFeatures] = useState([]);
 
   // Add new state to track which groups are expanded
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Add this state for storing council boundary
   const [councilBoundary, setCouncilBoundary] = useState(null);
-
-  // Add near your other state declarations
-  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // percentage
-  const dividerRef = useRef(null);
 
   // Add this function to calculate area from geometry
   const calculateAreaFromGeometry = async (result) => {
@@ -953,12 +949,27 @@ const Development = () => {
 
       const geojsonData = {
         type: "FeatureCollection",
-        features: features.filter(Boolean)
+        features: features
       };
-      
-      setMapFeatures(geojsonData);
+
+      const LAYER_NAME = 'development_applications';
+
+      try {
+        // Create the layer without styling
+        await rpc.invoke('createGeoJSONLayer', [
+          LAYER_NAME,
+          geojsonData,
+          { 
+            description: 'Development Applications'
+          }
+        ]);
+      } catch (error) {
+        console.error('Error adding layer:', error);
+      } finally {
+        setIsLayerLoading(false);
+      }
     } catch (error) {
-      console.error('Error processing features:', error);
+      console.error('Error adding layer:', error);
     } finally {
       setIsLayerLoading(false);
     }
@@ -1141,57 +1152,6 @@ const fetchCouncilBoundary = async (councilName) => {
   }
 };
 
-  const VerticalDivider = ({ onResize }) => {
-    const handleMouseDown = (e) => {
-      e.preventDefault();
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    };
-
-    const handleMouseMove = (e) => {
-      const containerWidth = document.body.clientWidth;
-      const percentage = (e.clientX / containerWidth) * 100;
-      // Limit the panel width between 20% and 80%
-      const clampedPercentage = Math.min(Math.max(percentage, 20), 80);
-      onResize(clampedPercentage);
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    return (
-      <div
-        className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize active:bg-blue-600 transition-colors"
-        onMouseDown={handleMouseDown}
-      />
-    );
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (dividerRef.current?.dragging) {
-        e.preventDefault();
-        document.body.style.userSelect = 'none';
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (dividerRef.current?.dragging) {
-        document.body.style.userSelect = '';
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);
-
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -1205,9 +1165,10 @@ const fetchCouncilBoundary = async (councilName) => {
       </header>
 
       {/* Main content */}
-      <div className="flex flex-row h-full">
-        {/* Left Panel */}
-        <div style={{ width: `${leftPanelWidth}%` }} className="overflow-auto">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel - Search and Results */}
+        <div className="w-1/2 overflow-y-auto">
+          <div className="p-6">
           {/* Existing search form and results content */}
           {isQueryVisible && (
             <form onSubmit={handleSearch} className="space-y-6 mb-6">
@@ -1815,74 +1776,71 @@ const fetchCouncilBoundary = async (councilName) => {
           </div>
         </div>
 
-        <VerticalDivider onResize={setLeftPanelWidth} />
-
         {/* Right Panel - Map */}
-        <div style={{ width: `${100 - leftPanelWidth}%` }} className="h-full">
-          <div className="h-full">
-            <div className="map-container">
-              <MapContainer 
-                center={[-33.8688, 151.2093]}
-                zoom={10}
-                bounds={searchResults?.length > 0 ? getBounds(searchResults) : undefined}
-                className="h-full w-full"
-                scrollWheelZoom={true}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                {councilBoundary && (
-                  <GeoJSON 
-                    data={councilBoundary}
-                    style={{
-                      color: '#ff0000',
-                      weight: 2,
-                      fillOpacity: 0.1
-                    }}
-                    eventHandlers={{
-                      add: (e) => {
-                        console.log('GeoJSON added to map');
-                        const map = e.target._map;
-                        try {
-                          const bounds = e.target.getBounds();
-                          console.log('Fitting to bounds:', bounds);
-                          map.fitBounds(bounds, { padding: [50, 50] });
-                        } catch (error) {
-                          console.error('Error fitting to bounds:', error);
-                        }
+        <div className="w-1/2">
+          <div className="map-container">
+            <MapContainer 
+              center={[-33.8688, 151.2093]}
+              zoom={10}
+              bounds={searchResults?.length > 0 ? getBounds(searchResults) : undefined}
+              className="h-full w-full"
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              {councilBoundary && (
+                <GeoJSON 
+                  data={councilBoundary}
+                  style={{
+                    color: '#ff0000',
+                    weight: 2,
+                    fillOpacity: 0.1
+                  }}
+                  eventHandlers={{
+                    add: (e) => {
+                      console.log('GeoJSON added to map');
+                      const map = e.target._map;
+                      try {
+                        const bounds = e.target.getBounds();
+                        console.log('Fitting to bounds:', bounds);
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                      } catch (error) {
+                        console.error('Error fitting to bounds:', error);
                       }
-                    }}
-                  />
-                )}
-                {searchResults?.map((result, index) => (
-                  result.Location?.[0]?.X && result.Location?.[0]?.Y && (
-                    <Marker
-                      key={index}
-                      position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
-                      icon={L.divIcon({
-                        className: 'bg-red-500 rounded-full w-3 h-3',
-                        iconSize: [12, 12],
-                        iconAnchor: [6, 6]
-                      })}
-                    >
-                      <Popup>
-                        <div className="text-sm">
-                          <p className="font-semibold">{result.Location[0].FullAddress}</p>
-                          <p>Type: {result.ApplicationType}</p>
-                          <p>Development: {cleanDevelopmentType(result.DevelopmentType)}</p>
-                          <p>Status: {result.ApplicationStatus}</p>
-                          <p>Cost: ${result.CostOfDevelopment?.toLocaleString()}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )
-                ))}
-              </MapContainer>
-            </div>
+                    }
+                  }}
+                />
+              )}
+              {searchResults?.map((result, index) => (
+                result.Location?.[0]?.X && result.Location?.[0]?.Y && (
+                  <Marker
+                    key={index}
+                    position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
+                    icon={L.divIcon({
+                      className: 'bg-red-500 rounded-full w-3 h-3',
+                      iconSize: [12, 12],
+                      iconAnchor: [6, 6]
+                    })}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <p className="font-semibold">{result.Location[0].FullAddress}</p>
+                        <p>Type: {result.ApplicationType}</p>
+                        <p>Development: {cleanDevelopmentType(result.DevelopmentType)}</p>
+                        <p>Status: {result.ApplicationStatus}</p>
+                        <p>Cost: ${result.CostOfDevelopment?.toLocaleString()}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )
+              ))}
+            </MapContainer>
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
