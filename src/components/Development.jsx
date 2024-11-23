@@ -31,6 +31,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Papa from 'papaparse';
 import AnimatedDevLogo from './AnimatedDevLogo';
+import { GeoJSON } from 'react-leaflet';
+import { lgamapping } from '../data/lgamapping';
 
 // Create a simple object for development type mapping
 const devTypesData = [
@@ -447,10 +449,17 @@ const Development = () => {
   const [areaData, setAreaData] = useState({});
 
   // Add this state for storing map features
-  const [mapFeatures, setMapFeatures] = useState([]);
+  const [mapFeatures, setMapFeatures] = useState({});
 
   // Add new state to track which groups are expanded
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  // Add this state for storing council boundary
+  const [councilBoundary, setCouncilBoundary] = useState(null);
+
+  // Add near your other state declarations
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // percentage
+  const dividerRef = useRef(null);
 
   // Add this function to calculate area from geometry
   const calculateAreaFromGeometry = async (result) => {
@@ -494,8 +503,6 @@ const Development = () => {
       const headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'PageSize': '10000',
-        'PageNumber': pageNumber.toString(),
         'filters': JSON.stringify({ filters: apiFilters })
       };
 
@@ -504,41 +511,28 @@ const Development = () => {
       const response = await fetch(url, {
         method: 'GET',
         headers,
-        credentials: 'same-origin'  // Change this from 'omit'
-      });
-
-      // Log raw response details
-      console.log('Raw Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
+        credentials: 'same-origin'
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Raw Response:', response);
         console.error('Detailed Error:', {
           status: response.status,
           statusText: response.statusText,
           body: errorText,
-          headers: Object.fromEntries(response.headers.entries()),
+          headers: response.headers,
           url: response.url
         });
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        throw new Error(`API Error: ${response.status}`);
       }
 
-      const data = await response.json();
-    console.log('API Response:', data);
-
-    // Handle the API response structure correctly
-    return {
-      Application: data.Application || [], // Update to match actual API response structure
-      TotalPages: data.TotalPages || 1
-    };
-  } catch (error) {
-    console.error('API call error:', error);
-    throw new Error(`Failed to fetch development applications: ${error.message}`);
-  }
-};
+      return await response.json();
+    } catch (error) {
+      console.error('API call error:', error);
+      throw new Error(`Failed to fetch development applications: ${error.message}`);
+    }
+  };
 
   // Use the helper functions in your useMemo hooks
   const sortedResults = useMemo(() => {
@@ -771,8 +765,18 @@ const Development = () => {
     setError(null);
     setSearchResults(null);
     setAreaData({});
+    setCouncilBoundary(null);
 
     try {
+      // Fetch council boundary first
+      if (council) {
+        const geoJsonBoundary = await fetchCouncilBoundary(council);
+        if (geoJsonBoundary) {
+          console.log('Setting council boundary:', geoJsonBoundary);
+          setCouncilBoundary(geoJsonBoundary);
+        }
+      }
+
       const filters = {
         CouncilName: council || undefined,
         ApplicationType: selectedTypes.has("Select All") ? undefined : Array.from(selectedTypes),
@@ -786,82 +790,39 @@ const Development = () => {
         DeterminationDateTo: formatDate(determinationDateTo)
       };
 
-      // Remove undefined values
-      Object.keys(filters).forEach(key => filters[key] === undefined && delete filters[key]);
-
-      console.log('Starting search with filters:', filters);
-
-      const firstPage = await fetchPage(1, filters);
-      let allResults = firstPage.Application || [];
-
-      if (firstPage.TotalPages > 1) {
-        console.log(`Fetching remaining ${firstPage.TotalPages - 1} pages...`);
-        const pagePromises = [];
-        for (let page = 2; page <= firstPage.TotalPages; page++) {
-          pagePromises.push(fetchPage(page, filters));
-        }
-
-        const remainingPages = await Promise.all(pagePromises);
-        remainingPages.forEach(page => {
-          if (page.Application) {
-            allResults = [...allResults, ...page.Application];
-          }
-        });
-      }
-
-      // Process geometries for both area calculation and map data
-      const processedData = await Promise.all(allResults.map(async (result) => {
-        const geometry = result.Location?.[0]?.Geometry;
-        if (!geometry) return { id: result.PlanningPortalApplicationNumber };
-
+      // Add retry logic
+      let retries = 3;
+      while (retries > 0) {
         try {
-          const area = await rpc.invoke("@gi-nx/gis-sdk/geometry/area", {
-            geometry: geometry
-          });
-
-          return {
-            id: result.PlanningPortalApplicationNumber,
-            area: area?.area,
-            mapFeature: {
-              geometry: geometry,
-              properties: {
-                address: result.Location?.[0]?.FullAddress,
-                type: result.ApplicationType,
-                development: cleanDevelopmentType(result.DevelopmentType),
-                status: result.ApplicationStatus,
-                cost: result.CostOfDevelopment,
-                lodged: result.LodgementDate
-              }
+          const firstPage = await fetchPage(1, filters);
+          let allResults = firstPage.Application || [];
+          
+          if (firstPage.TotalPages > 1) {
+            console.log(`Fetching remaining ${firstPage.TotalPages - 1} pages...`);
+            const pagePromises = [];
+            for (let page = 2; page <= firstPage.TotalPages; page++) {
+              pagePromises.push(fetchPage(page, filters));
             }
-          };
-        } catch (error) {
-          console.error('Error processing geometry:', error);
-          return { id: result.PlanningPortalApplicationNumber };
+
+            const remainingPages = await Promise.all(pagePromises);
+            remainingPages.forEach(page => {
+              if (page.Application) {
+                allResults = [...allResults, ...page.Application];
+              }
+            });
+          }
+          
+          setSearchResults(allResults);
+          break; // Success, exit retry loop
+        } catch (err) {
+          retries--;
+          if (retries === 0) throw err;
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between retries
         }
-      }));
-
-      // Separate area data and map features
-      const areaMap = processedData.reduce((acc, curr) => {
-        if (curr.id && curr.area) {
-          acc[curr.id] = curr.area;
-        }
-        return acc;
-      }, {});
-
-      const mapFeatures = processedData
-        .filter(item => item.mapFeature)
-        .map(item => item.mapFeature);
-
-      setAreaData(areaMap);
-      setMapFeatures(mapFeatures);
-      setSearchResults(allResults);
-      
-      if (allResults.length === 0) {
-        setError('No development applications found matching your criteria.');
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError(err.message);
+      setError(err.message || 'Failed to fetch development applications. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -992,27 +953,12 @@ const Development = () => {
 
       const geojsonData = {
         type: "FeatureCollection",
-        features: features
+        features: features.filter(Boolean)
       };
-
-      const LAYER_NAME = 'development_applications';
-
-      try {
-        // Create the layer without styling
-        await rpc.invoke('createGeoJSONLayer', [
-          LAYER_NAME,
-          geojsonData,
-          { 
-            description: 'Development Applications'
-          }
-        ]);
-      } catch (error) {
-        console.error('Error adding layer:', error);
-      } finally {
-        setIsLayerLoading(false);
-      }
+      
+      setMapFeatures(geojsonData);
     } catch (error) {
-      console.error('Error adding layer:', error);
+      console.error('Error processing features:', error);
     } finally {
       setIsLayerLoading(false);
     }
@@ -1022,8 +968,8 @@ const Development = () => {
     if (!results || results.length === 0) {
       // Default bounds for Sydney region (wider view)
       return [
-        [-34.1, 150.5], // Southwest corner
-        [-33.5, 151.5]  // Northeast corner
+        [-34.2, 150.5], // Southwest corner
+        [-33.4, 151.7]  // Northeast corner
       ];
     }
 
@@ -1036,16 +982,15 @@ const Development = () => {
 
     if (coordinates.length === 0) {
       return [
-        [-34.1, 150.5],
-        [-33.5, 151.5]
+        [-34.2, 150.5],
+        [-33.4, 151.7]
       ];
     }
 
     const latitudes = coordinates.map(coord => coord[0]);
     const longitudes = coordinates.map(coord => coord[1]);
 
-    // Add padding to the bounds
-    const padding = 0.1; // Adjust this value to change the padding amount
+    const padding = 0.1;
     return [
       [Math.min(...latitudes) - padding, Math.min(...longitudes) - padding],
       [Math.max(...latitudes) + padding, Math.max(...longitudes) + padding]
@@ -1112,20 +1057,157 @@ const Development = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="flex flex-col h-screen">
-      {/* Header Panel */}
-      <div className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
-        <div className="flex items-center gap-2">
-          <AnimatedDevLogo />
-          <h2 className="text-2xl font-bold">NSW Development Applications</h2>
-        </div>
-      </div>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setCouncilBoundary(null); // Reset boundary
+    
+    try {
+      // First fetch the council boundary
+      if (council) {
+        console.log('Fetching council boundary for:', council);
+        const boundary = await fetchCouncilBoundary(council);
+        if (boundary) {
+          console.log('Setting council boundary:', boundary);
+          setCouncilBoundary(boundary);
+        }
+      }
 
-      {/* Main Content Area */}
-      <div className="flex flex-1">
-        {/* Left Panel - Search and Results */}
-        <div className="w-1/2 overflow-y-auto p-4 border-r border-gray-200">
+      // Then fetch development applications
+      const results = await fetchDevelopmentApplications();
+      setSearchResults(processResults(results));
+    } catch (error) {
+      console.error('Search error:', error);
+      setError(
+        error.message.includes('timeout') 
+          ? 'The search request timed out. Please try again or reduce your search criteria.'
+          : 'Failed to fetch development applications. Please try again later.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+const fetchCouncilBoundary = async (councilName) => {
+  if (!councilName) return null;
+  console.log('Fetching boundary for council:', councilName);
+
+  const mappedName = lgaMapping[councilName];
+  if (!mappedName) {
+    console.log('No LGA mapping found for council:', councilName);
+    return null;
+  }
+
+  const baseUrl = 'https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Administrative_Boundaries/MapServer/1/query';
+  const params = new URLSearchParams({
+    where: `LGANAME='${mappedName}'`,
+    outFields: '*',
+    returnGeometry: 'true',
+    geometryType: 'esriGeometryPolygon',
+    spatialRel: 'esriSpatialRelIntersects',
+    outSR: '4326',
+    f: 'json'
+  });
+
+  try {
+    const url = `${baseUrl}?${params}`;
+    console.log('Fetching from URL:', url);
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch council boundary');
+    
+    const data = await response.json();
+    console.log('Council boundary response:', data);
+
+    if (data.features?.length > 0) {
+      const feature = data.features[0];
+      // Transform ArcGIS geometry to GeoJSON format
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: feature.geometry.rings
+        },
+        properties: feature.attributes || {}
+      };
+    }
+    console.log('No boundary found for council');
+    return null;
+  } catch (error) {
+    console.error('Error fetching council boundary:', error);
+    return null;
+  }
+};
+
+  const VerticalDivider = ({ onResize }) => {
+    const handleMouseDown = (e) => {
+      e.preventDefault();
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    const handleMouseMove = (e) => {
+      const containerWidth = document.body.clientWidth;
+      const percentage = (e.clientX / containerWidth) * 100;
+      // Limit the panel width between 20% and 80%
+      const clampedPercentage = Math.min(Math.max(percentage, 20), 80);
+      onResize(clampedPercentage);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    return (
+      <div
+        className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize active:bg-blue-600 transition-colors"
+        onMouseDown={handleMouseDown}
+      />
+    );
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (dividerRef.current?.dragging) {
+        e.preventDefault();
+        document.body.style.userSelect = 'none';
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (dividerRef.current?.dragging) {
+        document.body.style.userSelect = '';
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  return (
+    <div className="h-screen flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <AnimatedDevLogo />
+            <h1 className="text-xl font-semibold text-gray-900">NSW Development Applications</h1>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <div className="flex flex-row h-full">
+        {/* Left Panel */}
+        <div style={{ width: `${leftPanelWidth}%` }} className="overflow-auto">
           {/* Existing search form and results content */}
           {isQueryVisible && (
             <form onSubmit={handleSearch} className="space-y-6 mb-6">
@@ -1458,114 +1540,7 @@ const Development = () => {
 
               {searchResults && searchResults.length > 0 && (
                 <div className="mb-4 relative">
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      if (!searchResults?.length) return;
 
-                      setIsLayerLoading(true);
-                      try {
-                        const features = await Promise.all(searchResults.map(async result => {
-                          // First try to get lot polygon if lotidstring exists
-                          if (result.LotIdString && result.LotIdString !== "N/A") {
-                            const lotQuery = `${encodeURIComponent(result.LotIdString)}`;
-                            const url = new URL('https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/FeatureServer/8/query');
-                            url.searchParams.append('where', `lotidstring='${lotQuery}'`);
-                            url.searchParams.append('outFields', '*');
-                            url.searchParams.append('returnGeometry', 'true');
-                            url.searchParams.append('outSR', '4326');
-                            url.searchParams.append('f', 'json');
-
-                            const response = await fetch(url);
-                            
-                            if (response.ok) {
-                              const lotData = await response.json();
-                              if (lotData.features?.[0]?.geometry?.rings) {
-                                return createFeature({
-                                  type: "Polygon",
-                                  coordinates: lotData.features[0].geometry.rings
-                                }, result);
-                              }
-                            }
-                          }
-
-                          // Fallback to property lookup using coordinates
-                          const coords = [
-                            parseFloat(result.Location[0].X),
-                            parseFloat(result.Location[0].Y)
-                          ];
-
-                          try {
-                            const url = new URL('https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/FeatureServer/12/query');
-                            url.searchParams.append('geometry', `${coords[0]},${coords[1]}`);
-                            url.searchParams.append('geometryType', 'esriGeometryPoint');
-                            url.searchParams.append('inSR', '4326');
-                            url.searchParams.append('spatialRel', 'esriSpatialRelIntersects');
-                            url.searchParams.append('outFields', '*');
-                            url.searchParams.append('returnGeometry', 'true');
-                            url.searchParams.append('outSR', '4326');
-                            url.searchParams.append('f', 'json');
-
-                            const propertyResponse = await fetch(url);
-
-                            if (propertyResponse.ok) {
-                              const propertyData = await propertyResponse.json();
-                              if (propertyData.features?.[0]?.geometry?.rings) {
-                                return createFeature({
-                                  type: "Polygon",
-                                  coordinates: propertyData.features[0].geometry.rings
-                                }, result);
-                              }
-                            }
-                          } catch (error) {
-                            console.error('Error fetching property boundary:', error);
-                          }
-
-                          // If both methods fail, fall back to point geometry
-                          return createFeature({
-                            type: "Point",
-                            coordinates: coords
-                          }, result);
-                        }));
-
-                        const geojsonData = {
-                          type: "FeatureCollection",
-                          features: features
-                        };
-
-                        const LAYER_NAME = 'development_applications';
-
-                        try {
-                          await rpc.invoke('createGeoJSONLayer', [
-                            LAYER_NAME,
-                            geojsonData,
-                            { 
-                              description: 'Development Applications'
-                            }
-                          ]);
-                        } catch (error) {
-                          console.error('Error adding layer:', error);
-                        } finally {
-                          setIsLayerLoading(false);
-                        }
-                      } catch (error) {
-                        console.error('Error adding layer:', error);
-                      } finally {
-                        setIsLayerLoading(false);
-                      }
-                    }}
-                    className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                    disabled={isLayerLoading}
-                  >
-                    {isLayerLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="font-medium">Building layer...</span>
-                      </span>
-                    ) : (
-                      'Add to Map'
-                    )}
-                  </Button>
 
                   {isLayerLoading && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center rounded">
@@ -1659,225 +1634,255 @@ const Development = () => {
                       <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
                       <YAxis />
                       <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                      <Bar dataKey="value" fill="#60a5fa" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
+                        <Bar dataKey="value" fill="#60a5fa" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
 
-              <Card className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-4">Average Cost by Development Type ($ millions)</h3>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData.averageCost}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                      <Bar dataKey="value" fill="#34d399" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
+                <Card className="p-4 mt-6">
+                  <h3 className="text-lg font-semibold mb-4">Average Cost by Development Type ($ millions)</h3>
+                  <div className="w-full">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={chartData.averageCost}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
+                        <Bar dataKey="value" fill="#34d399" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
 
-              <Card className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Average Days to Determination by Development Type
-                </h3>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData.averageDays}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value} days`} />
-                      <Bar dataKey="value" fill="#f472b6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
+                <Card className="p-4 mt-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Average Days to Determination by Development Type
+                  </h3>
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData.averageDays}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value} days`} />
+                        <Bar dataKey="value" fill="#f472b6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
 
-              <Card className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Average Cost per Dwelling by Development Type ($ millions)
-                </h3>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={chartData.costPerDwelling}
-                      margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        height={100} 
-                        interval={0} 
-                        tick={{ fontSize: 14 }}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `$${value.toFixed(1)}M`}
-                      />
-                      <Tooltip 
-                        formatter={(value) => `$${value.toFixed(1)}M`}
-                        labelFormatter={(label) => `Development Type: ${label}`}
-                      />
-                      <Bar dataKey="value" fill="#60a5fa" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="text-sm text-gray-500 mt-2">
-                  Only showing types with 3+ developments.
-                </div>
-              </Card>
+                <Card className="p-4 mt-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Average Cost per Dwelling by Development Type ($ millions)
+                  </h3>
+                  <div className="w-full">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart 
+                        data={chartData.costPerDwelling}
+                        margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="name" 
+                          angle={-45} 
+                          textAnchor="end" 
+                          height={100} 
+                          interval={0} 
+                          tick={{ fontSize: 14 }}
+                        />
+                        <YAxis 
+                          tickFormatter={(value) => `$${value.toFixed(1)}M`}
+                        />
+                        <Tooltip 
+                          formatter={(value) => `$${value.toFixed(1)}M`}
+                          labelFormatter={(label) => `Development Type: ${label}`}
+                        />
+                        <Bar dataKey="value" fill="#60a5fa" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-2">
+                    Only showing types with 3+ developments.
+                  </div>
+                </Card>
 
-              <div className="mt-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  Search Results ({sortedResults.length} applications found)
-                </h2>
-                <div className="bg-white rounded-lg shadow max-w-full">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-xs">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <ResizableColumn 
-                            width={columnWidths.address} 
-                            onResize={(width) => handleResize('address', width)}
-                          >
-                            Address
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.lots}
-                            onResize={(width) => handleResize('lots', width)}
-                          >
-                            Lots
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.type}
-                            onResize={(width) => handleResize('type', width)}
-                          >
-                            Type
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.development}
-                            onResize={(width) => handleResize('development', width)}
-                          >
-                            Development
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.status}
-                            onResize={(width) => handleResize('status', width)}
-                          >
-                            Status
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.lodged}
-                            onResize={(width) => handleResize('lodged', width)}
-                          >
-                            Lodged
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.days}
-                            onResize={(width) => handleResize('days', width)}
-                          >
-                            Days
-                          </ResizableColumn>
-                          <ResizableColumn 
-                            width={columnWidths.cost}
-                            onResize={(width) => handleResize('cost', width)}
-                          >
-                            Cost
-                          </ResizableColumn>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedResults.map((result, index) => (
-                          <tr key={result.PlanningPortalApplicationNumber || index}>
-                            <td style={{ width: columnWidths.address }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                              {result.Location?.[0]?.FullAddress || 'N/A'}
-                            </td>
-                            <td style={{ width: columnWidths.lots }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                              {result.Location?.[0]?.Lot?.map((lot, index) => (
-                                <span key={index}>
-                                  {lot.Lot && lot.PlanLabel 
-                                    ? `${lot.Lot}//${lot.PlanLabel}`
-                                    : lot.Lot}
-                                  {index < result.Location[0].Lot.length - 1 ? ', ' : ''}
-                                </span>
-                              )) || 'N/A'}
-                            </td>
-                            <td style={{ width: columnWidths.type }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                              {result.ApplicationType === "Development Application" ? "DA" :
-                               result.ApplicationType === "Modification Application" ? "MOD" :
-                               result.ApplicationType === "Review of Determination" ? "Review" : 
-                               result.ApplicationType}
-                            </td>
-                            <td style={{ width: columnWidths.development }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                              {cleanDevelopmentType(result.DevelopmentType)}
-                            </td>
-                            <td style={{ width: columnWidths.status }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                              {result.ApplicationStatus}
-                            </td>
-                            <td style={{ width: columnWidths.lodged }} className="px-2 py-2 text-gray-900 whitespace-nowrap text-xs">
-                              {format(new Date(result.LodgementDate), 'dd MMM yyyy')}
-                            </td>
-                            <td style={{ width: columnWidths.days }} className="px-2 py-2 text-gray-900 text-center text-xs">
-                              {Math.floor((new Date(result.DeterminationDate || new Date()) - new Date(result.LodgementDate)) / (1000 * 60 * 60 * 24))}
-                            </td>
-                            <td style={{ width: columnWidths.cost }} className="px-2 py-2 text-gray-900 text-right text-xs">
-                              ${result.CostOfDevelopment?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </td>
+                <div className="mt-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Search Results ({sortedResults.length} applications found)
+                  </h2>
+                  <div className="bg-white rounded-lg shadow max-w-full">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-xs">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <ResizableColumn 
+                              width={columnWidths.address} 
+                              onResize={(width) => handleResize('address', width)}
+                            >
+                              Address
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.lots}
+                              onResize={(width) => handleResize('lots', width)}
+                            >
+                              Lots
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.type}
+                              onResize={(width) => handleResize('type', width)}
+                            >
+                              Type
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.development}
+                              onResize={(width) => handleResize('development', width)}
+                            >
+                              Development
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.status}
+                              onResize={(width) => handleResize('status', width)}
+                            >
+                              Status
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.lodged}
+                              onResize={(width) => handleResize('lodged', width)}
+                            >
+                              Lodged
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.days}
+                              onResize={(width) => handleResize('days', width)}
+                            >
+                              Days
+                            </ResizableColumn>
+                            <ResizableColumn 
+                              width={columnWidths.cost}
+                              onResize={(width) => handleResize('cost', width)}
+                            >
+                              Cost
+                            </ResizableColumn>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {sortedResults.map((result, index) => (
+                            <tr key={result.PlanningPortalApplicationNumber || index}>
+                              <td style={{ width: columnWidths.address }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                {result.Location?.[0]?.FullAddress || 'N/A'}
+                              </td>
+                              <td style={{ width: columnWidths.lots }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                {result.Location?.[0]?.Lot?.map((lot, index) => (
+                                  <span key={index}>
+                                    {lot.Lot && lot.PlanLabel 
+                                      ? `${lot.Lot}//${lot.PlanLabel}`
+                                      : lot.Lot}
+                                    {index < result.Location[0].Lot.length - 1 ? ', ' : ''}
+                                  </span>
+                                )) || 'N/A'}
+                              </td>
+                              <td style={{ width: columnWidths.type }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                {result.ApplicationType === "Development Application" ? "DA" :
+                                 result.ApplicationType === "Modification Application" ? "MOD" :
+                                 result.ApplicationType === "Review of Determination" ? "Review" : 
+                                 result.ApplicationType}
+                              </td>
+                              <td style={{ width: columnWidths.development }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                {cleanDevelopmentType(result.DevelopmentType)}
+                              </td>
+                              <td style={{ width: columnWidths.status }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                {result.ApplicationStatus}
+                              </td>
+                              <td style={{ width: columnWidths.lodged }} className="px-2 py-2 text-gray-900 whitespace-nowrap text-xs">
+                                {format(new Date(result.LodgementDate), 'dd MMM yyyy')}
+                              </td>
+                              <td style={{ width: columnWidths.days }} className="px-2 py-2 text-gray-900 text-center text-xs">
+                                {Math.floor((new Date(result.DeterminationDate || new Date()) - new Date(result.LodgementDate)) / (1000 * 60 * 60 * 24))}
+                              </td>
+                              <td style={{ width: columnWidths.cost }} className="px-2 py-2 text-gray-900 text-right text-xs">
+                                ${result.CostOfDevelopment?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
+        <VerticalDivider onResize={setLeftPanelWidth} />
+
         {/* Right Panel - Map */}
-        <div className="w-1/2">
-          <MapContainer 
-            bounds={searchResults?.length > 0 ? getBounds(searchResults) : [[-33.8688, 151.2093], [-33.8688, 151.2093]]}
-            className="h-full w-full"
-            scrollWheelZoom={true}
-            key={JSON.stringify(getBounds(searchResults))}
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            {searchResults?.map((result, index) => (
-              result.Location?.[0]?.X && result.Location?.[0]?.Y && (
-                <Marker
-                  key={index}
-                  position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
-                  icon={L.divIcon({
-                    className: 'bg-red-500 rounded-full w-3 h-3',
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6]
-                  })}
-                >
-                  <Popup>
-                    <div className="text-sm">
-                      <p className="font-semibold">{result.Location[0].FullAddress}</p>
-                      <p>Type: {result.ApplicationType}</p>
-                      <p>Development: {cleanDevelopmentType(result.DevelopmentType)}</p>
-                      <p>Status: {result.ApplicationStatus}</p>
-                      <p>Cost: ${result.CostOfDevelopment?.toLocaleString()}</p>
-                    </div>
-                  </Popup>
-                </Marker>
-              )
-            ))}
-          </MapContainer>
+        <div style={{ width: `${100 - leftPanelWidth}%` }} className="h-full">
+          <div className="h-full">
+            <div className="map-container">
+              <MapContainer 
+                center={[-33.8688, 151.2093]}
+                zoom={10}
+                bounds={searchResults?.length > 0 ? getBounds(searchResults) : undefined}
+                className="h-full w-full"
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {councilBoundary && (
+                  <GeoJSON 
+                    data={councilBoundary}
+                    style={{
+                      color: '#ff0000',
+                      weight: 2,
+                      fillOpacity: 0.1
+                    }}
+                    eventHandlers={{
+                      add: (e) => {
+                        console.log('GeoJSON added to map');
+                        const map = e.target._map;
+                        try {
+                          const bounds = e.target.getBounds();
+                          console.log('Fitting to bounds:', bounds);
+                          map.fitBounds(bounds, { padding: [50, 50] });
+                        } catch (error) {
+                          console.error('Error fitting to bounds:', error);
+                        }
+                      }
+                    }}
+                  />
+                )}
+                {searchResults?.map((result, index) => (
+                  result.Location?.[0]?.X && result.Location?.[0]?.Y && (
+                    <Marker
+                      key={index}
+                      position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
+                      icon={L.divIcon({
+                        className: 'bg-red-500 rounded-full w-3 h-3',
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                      })}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <p className="font-semibold">{result.Location[0].FullAddress}</p>
+                          <p>Type: {result.ApplicationType}</p>
+                          <p>Development: {cleanDevelopmentType(result.DevelopmentType)}</p>
+                          <p>Status: {result.ApplicationStatus}</p>
+                          <p>Cost: ${result.CostOfDevelopment?.toLocaleString()}</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )
+                ))}
+              </MapContainer>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 

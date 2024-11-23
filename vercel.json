@@ -2,6 +2,12 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/eplanning/[...path].js": {
+      "memory": 3008,
+      "maxDuration": 300
+    }
+  },
   "rewrites": [
     {
       "source": "/api/eplanning/:path*",

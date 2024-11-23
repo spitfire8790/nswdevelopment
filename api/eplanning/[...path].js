@@ -1,6 +1,8 @@
 export default async function handler(req, res) {
   const { path } = req.query;
   const apiUrl = 'https://api.apps1.nsw.gov.au/eplanning/data/v0/OnlineDA';
+  const MAX_RETRIES = 3;
+  const TIMEOUT = 120000; // 2 minutes
 
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -15,9 +17,8 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // Increased to 60 seconds
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT);
 
-    // Parse and validate the filters
     let filters = {};
     try {
       filters = JSON.parse(req.headers.filters);
@@ -28,8 +29,8 @@ export default async function handler(req, res) {
     const headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'PageSize': req.headers.pagesize || '10000',
-      'PageNumber': req.headers.pagenumber || '1',
+      'PageSize': '10000',
+      'PageNumber': '1',
       'filters': JSON.stringify(filters)
     };
 
@@ -42,6 +43,9 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: headers,
       signal: controller.signal
+    }).catch(error => {
+      console.error('Fetch error:', error);
+      throw new Error(`Failed to connect to NSW Planning Portal: ${error.message}`);
     });
 
     clearTimeout(timeout);
@@ -60,21 +64,10 @@ export default async function handler(req, res) {
     res.status(200).json(data);
   } catch (error) {
     console.error('Handler error:', error);
-    
-    if (error.name === 'AbortError') {
-      res.status(504).json({ 
-        error: {
-          message: 'Request timeout',
-          details: 'The request to the NSW Planning Portal API timed out after 60 seconds'
-        }
-      });
-    } else {
-      res.status(500).json({ 
-        error: {
-          message: error.message,
-          details: error.stack
-        }
-      });
-    }
+    res.status(error.name === 'AbortError' ? 504 : 500).json({
+      error: {
+        message: error.message
+      }
+    });
   }
 }
