@@ -21,7 +21,27 @@ import {
   Timer,
   Scale,
   FileQuestion,
-  MinusCircle
+  MinusCircle,
+  Home,
+  Wrench,
+  Building2,
+  UtensilsCrossed,
+  GraduationCap,
+  Stethoscope,
+  Dumbbell,
+  Hotel,
+  Factory,
+  Car,
+  Anchor,
+  Settings,
+  Map as MapIcon, // Rename Map to MapIcon
+  Building,
+  Briefcase,
+  Hammer,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from "date-fns";
@@ -33,247 +53,20 @@ import Papa from 'papaparse';
 import AnimatedDevLogo from './AnimatedDevLogo';
 import { GeoJSON } from 'react-leaflet';
 import { lgaMapping } from '../data/lgamapping';
-
-// Create a simple object for development type mapping
-const devTypesData = [
-  // Residential Types
-  { oldtype: 'Dwelling', newtype: 'Dwelling', secondary: '' },
-  { oldtype: 'Dwelling house', newtype: 'House', secondary: '' },
-  { oldtype: 'Secondary dwelling', newtype: '', secondary: 'X' },
-  { oldtype: 'Dual occupancy', newtype: 'Dual occupancy', secondary: '' },
-  { oldtype: 'Dual occupancy (attached)', newtype: 'Dual occupancy', secondary: '' },
-  { oldtype: 'Dual occupancy (detached)', newtype: 'Dual occupancy', secondary: '' },
-  { oldtype: 'Residential flat building', newtype: 'Apartments', secondary: '' },
-  { oldtype: 'Multi-dwelling housing', newtype: 'Multi-dwelling housing', secondary: '' },
-  { oldtype: 'Multi-dwelling housing (terraces)', newtype: 'Terrace housing', secondary: '' },
-  { oldtype: 'Semi-attached dwelling', newtype: 'Semi-attached dwelling', secondary: '' },
-  { oldtype: 'Attached dwelling', newtype: 'Attached dwelling', secondary: '' },
-  { oldtype: 'Semi-detached dwelling', newtype: 'Semi-detached dwelling', secondary: '' },
-  { oldtype: 'Shop top housing', newtype: 'Shop top housing', secondary: '' },
-  { oldtype: 'Boarding house', newtype: 'Boarding house', secondary: '' },
-  { oldtype: 'Seniors housing', newtype: 'Seniors housing', secondary: '' },
-  { oldtype: 'Group homes', newtype: 'Group homes', secondary: '' },
-  { oldtype: 'Group home', newtype: 'Group homes', secondary: '' },
-  { oldtype: 'Group home (permanent)', newtype: 'Group homes', secondary: '' },
-  { oldtype: 'Group home (transitional)', newtype: 'Group homes', secondary: '' },
-  { oldtype: 'Build-to-rent', newtype: 'Build-to-rent', secondary: '' },
-  { oldtype: 'Co-living', newtype: 'Co-living housing', secondary: '' },
-  { oldtype: 'Co-living housing', newtype: 'Co-living housing', secondary: '' },
-  { oldtype: 'Manufactured home', newtype: 'Manufactured home', secondary: '' },
-  { oldtype: 'Moveable dwelling', newtype: 'Moveable dwelling', secondary: '' },
-  { oldtype: 'Rural worker\'s dwelling', newtype: 'Rural worker\'s dwelling', secondary: '' },
-
-  // Alterations and Modifications
-  { oldtype: 'Alterations and additions to residential development', newtype: '', secondary: 'X' },
-  { oldtype: 'Alterations and additions to commercial development', newtype: '', secondary: 'X' },
-  { oldtype: 'Alterations and additions to industrial development', newtype: '', secondary: 'X' },
-  { oldtype: 'Alterations or additions to an existing building or structure', newtype: '', secondary: 'X' },
-  { oldtype: 'Minor building alterations (external)', newtype: '', secondary: 'X' },
-  { oldtype: 'Minor building alterations (internal)', newtype: '', secondary: 'X' },
-
-  // Commercial and Business
-  { oldtype: 'Commercial development', newtype: 'Commercial', secondary: '' },
-  { oldtype: 'Business premises', newtype: 'Commercial', secondary: '' },
-  { oldtype: 'Office premises', newtype: 'Office', secondary: '' },
-  { oldtype: 'Office Premise', newtype: 'Office', secondary: '' },
-  { oldtype: 'Retail premises', newtype: 'Retail', secondary: '' },
-  { oldtype: 'Retail Premise', newtype: 'Retail', secondary: '' },
-  { oldtype: 'Specialised Retail Premises', newtype: 'Retail', secondary: '' },
-  { oldtype: 'Shop', newtype: 'Shop', secondary: '' },
-  { oldtype: 'Neighbourhood shop', newtype: 'Shop', secondary: '' },
-  { oldtype: 'Neighbourhood supermarket', newtype: 'Shop', secondary: '' },
-
-  // Food and Beverage
-  { oldtype: 'Restaurant or cafe', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Food and drink premises', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Take-away food and drink premises', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Food and drink premise', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Take away food and drink', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Artisanal food and drink', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Artisan food and drink industry', newtype: 'Food and beverage', secondary: '' },
-  { oldtype: 'Pub', newtype: 'Pub', secondary: '' },
-  { oldtype: 'Small bar', newtype: 'Pub', secondary: '' },
-
-  // Education and Childcare
-  { oldtype: 'Educational establishment', newtype: 'Educational establishment', secondary: '' },
-  { oldtype: 'Centre based childcare', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'Centre-based child care', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'School based child care', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'School-based child care', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'Home based child care', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'Early Education and Care Facility', newtype: 'Childcare', secondary: '' },
-  { oldtype: 'School', newtype: 'School', secondary: '' },
-  { oldtype: 'Out of school hours care', newtype: 'Out of school hours care', secondary: '' },
-
-  // Health and Medical
-  { oldtype: 'Health services facilities', newtype: 'Health services', secondary: '' },
-  { oldtype: 'Health services facility', newtype: 'Health services', secondary: '' },
-  { oldtype: 'Health consulting room', newtype: 'Health services', secondary: '' },
-  { oldtype: 'Health Infrastructure', newtype: 'Health Infrastructure', secondary: '' },
-  { oldtype: 'Medical centre', newtype: 'Medical centre', secondary: '' },
-  { oldtype: 'Hospital', newtype: 'Hospital', secondary: '' },
-  { oldtype: 'Community health service facility', newtype: 'Health services', secondary: '' },
-
-  // Recreation and Entertainment
-  { oldtype: 'Recreational Uses', newtype: 'Recreation', secondary: '' },
-  { oldtype: 'Recreation facility (indoor)', newtype: 'Recreation facility (indoor)', secondary: '' },
-  { oldtype: 'Recreation facility (outdoor)', newtype: 'Recreation facility (outdoor)', secondary: '' },
-  { oldtype: 'Recreation/Tourist Premise', newtype: 'Recreation/Tourist', secondary: '' },
-  { oldtype: 'Recreation area', newtype: 'Recreation', secondary: '' },
-  { oldtype: 'Recreation facility (major)', newtype: 'Recreation', secondary: '' },
-  { oldtype: 'Entertainment facility', newtype: 'Entertainment facility', secondary: '' },
-  { oldtype: 'Function centre', newtype: 'Function centre', secondary: '' },
-  { oldtype: 'Tennis courts', newtype: 'Tennis courts', secondary: '' },
-  { oldtype: 'Water recreation structure', newtype: 'Recreation', secondary: '' },
-
-  // Tourism and Accommodation
-  { oldtype: 'Tourist and visitor accommodation', newtype: 'Tourist and visitor accommodation', secondary: '' },
-  { oldtype: 'Hotel or motel accommodation', newtype: 'Hotel', secondary: '' },
-  { oldtype: 'Hotel or motel accomodation', newtype: 'Hotel', secondary: '' },
-  { oldtype: 'Serviced apartment', newtype: 'Serviced apartment', secondary: '' },
-  { oldtype: 'Bed and breakfast accommodation', newtype: 'Bed and breakfast accommodation', secondary: '' },
-  { oldtype: 'Backpackers\' accommodation', newtype: 'Backpackers', secondary: '' },
-  { oldtype: 'Farm stay accommodation', newtype: 'Farm stay accommodation', secondary: '' },
-  { oldtype: 'Eco-tourist facility', newtype: 'Eco-tourist facility', secondary: '' },
-
-  // Industrial and Warehousing
-  { oldtype: 'Industrial development', newtype: 'Industrial', secondary: '' },
-  { oldtype: 'General industry', newtype: 'General industry', secondary: 'X' },
-  { oldtype: 'Light industry', newtype: 'Light industry', secondary: '' },
-  { oldtype: 'Heavy industry', newtype: 'Heavy industry', secondary: '' },
-  { oldtype: 'Warehouse or distribution centre', newtype: 'Warehouse or distribution centre', secondary: '' },
-  { oldtype: 'Local distribution premise', newtype: 'Warehouse or distribution centre', secondary: '' },
-  { oldtype: 'Storage premises', newtype: 'Storage', secondary: 'X' },
-  { oldtype: 'Self storage units', newtype: 'Storage', secondary: '' },
-  { oldtype: 'Data storage premises', newtype: 'Data storage', secondary: '' },
-  { oldtype: 'Heavy Industrial Storage Establishment', newtype: 'Industrial storage', secondary: '' },
-  { oldtype: 'Hazardous storage establishment', newtype: 'Hazardous storage', secondary: '' },
-  { oldtype: 'Hazardous Industry', newtype: 'Hazardous industry', secondary: '' },
-  { oldtype: 'Offensive Industry', newtype: 'Hazardous industry', secondary: '' },
-
-  // Transport and Vehicle Related
-  { oldtype: 'Car park', newtype: 'Car park', secondary: '' },
-  { oldtype: 'Service station', newtype: 'Service station', secondary: '' },
-  { oldtype: 'Vehicle repair station', newtype: 'Vehicle repair', secondary: '' },
-  { oldtype: 'Vehicle Sales or Hire Premises', newtype: 'Vehicle Sales or Hire Premises', secondary: '' },
-  { oldtype: 'Vehicle body repair workshop', newtype: 'Vehicle repair', secondary: '' },
-  { oldtype: 'Automotive/truck premises', newtype: 'Automotive/truck premises', secondary: '' },
-  { oldtype: 'Truck depot', newtype: 'Depot', secondary: '' },
-  { oldtype: 'Transport depot', newtype: 'Depot', secondary: '' },
-  { oldtype: 'Transport Infrastructure', newtype: 'Transport infrastructure', secondary: '' },
-  { oldtype: 'Passenger transport facility', newtype: 'Passenger transport', secondary: '' },
-  { oldtype: 'Highway service centre', newtype: 'Highway service centre', secondary: '' },
-  { oldtype: 'Air transport premises', newtype: 'Air transport', secondary: '' },
-  { oldtype: 'Air transport facility', newtype: 'Air transport', secondary: '' },
-  { oldtype: 'Airport', newtype: 'Airport', secondary: '' },
-  { oldtype: 'Helipad', newtype: 'Helipad', secondary: '' },
-
-  // Marine and Water Related
-  { oldtype: 'Marina', newtype: 'Marina', secondary: '' },
-  { oldtype: 'Marine Premise', newtype: 'Marine Premise', secondary: '' },
-  { oldtype: 'Boat launching ramp', newtype: 'Boat ramp', secondary: '' },
-  { oldtype: 'Boat building and repair facility', newtype: 'Boat building and repair', secondary: '' },
-  { oldtype: 'Boat shed', newtype: 'Boat shed', secondary: 'X' },
-  { oldtype: 'Mooring Pen', newtype: 'Mooring', secondary: '' },
-  { oldtype: 'Mooring', newtype: 'Mooring', secondary: '' },
-  { oldtype: 'Jetty', newtype: 'Jetty', secondary: '' },
-  { oldtype: 'Port wharf boating facilities', newtype: 'Boat facilities', secondary: '' },
-  { oldtype: 'Wharf or boating facility', newtype: 'Boat facilities', secondary: '' },
-  { oldtype: 'Sea walls or training walls', newtype: 'Sea walls', secondary: '' },
-
-  // Infrastructure and Utilities
-  { oldtype: 'Infrastructure', newtype: 'Infrastructure', secondary: '' },
-  { oldtype: 'Other Infrastructure', newtype: 'Infrastructure', secondary: 'X' },
-  { oldtype: 'Telecommunications and communication facilities', newtype: 'Telecommunications facility', secondary: '' },
-  { oldtype: 'Telecommunications facility', newtype: 'Telecommunications facility', secondary: '' },
-  { oldtype: 'Telecommunications network', newtype: 'Telecommunications network', secondary: '' },
-  { oldtype: 'Water Infrastructure', newtype: 'Water infrastructure', secondary: '' },
-  { oldtype: 'Water storage facility', newtype: 'Water storage', secondary: '' },
-  { oldtype: 'Water supply system', newtype: 'Water supply', secondary: '' },
-  { oldtype: 'Water treatment facility', newtype: 'Water treatment', secondary: '' },
-  { oldtype: 'Water recycling facility', newtype: 'Water treatment', secondary: '' },
-  { oldtype: 'Electricity generating facility (solar and wind)', newtype: 'Electricity generating', secondary: '' },
-  { oldtype: 'Electricity generating facility (non-solar or wind)', newtype: 'Electricity generating', secondary: '' },
-  { oldtype: 'Facilities for electric vehicles', newtype: 'Electric vehicle facility', secondary: '' },
-  { oldtype: 'Electric vehicle facility', newtype: 'Electric vehicle facility', secondary: '' },
-
-  // Subdivision and Land Development
-  { oldtype: 'Subdivision of land', newtype: 'Subdivision', secondary: '' },
-  { oldtype: 'Subdivision', newtype: 'Subdivision', secondary: '' },
-  { oldtype: 'Stratum / community title subdivision', newtype: 'Subdivision', secondary: 'X' },
-  { oldtype: 'Earthworks / change in levels', newtype: '', secondary: 'X' },
-  { oldtype: 'Earthworks, retaining walls and structural support', newtype: '', secondary: 'X' },
-
-  // Mixed Use and Other Development Types
-  { oldtype: 'Mixed use development', newtype: 'Mixed use', secondary: '' },
-  { oldtype: 'Creative industry', newtype: 'Creative industry', secondary: '' },
-  { oldtype: 'Exhibition home', newtype: 'Exhibition home', secondary: '' },
-  { oldtype: 'Exhibition village', newtype: 'Exhibition home', secondary: '' },
-  { oldtype: 'Market', newtype: 'Market', secondary: '' },
-  { oldtype: 'Animal boarding or training establishment', newtype: 'Animal boarding or training establishment', secondary: '' },
-  { oldtype: 'Animal care premises', newtype: 'Animal care', secondary: '' },
-  { oldtype: 'Animal shelters', newtype: 'Animal care', secondary: '' },
-  { oldtype: 'Veterinary hospital', newtype: 'Veterinary hospital', secondary: '' },
-  { oldtype: 'Hardware and building supply', newtype: 'Hardware and building supply', secondary: '' },
-  { oldtype: 'Sex services premise', newtype: 'Sex services', secondary: '' },
-  { oldtype: 'Sex and Adult Premise', newtype: 'Sex services', secondary: '' },
-  { oldtype: 'Restricted premise', newtype: 'Restricted premise', secondary: '' },
-  { oldtype: 'Registered club', newtype: 'Registered club', secondary: '' },
-
-  // Home Business and Occupation
-  { oldtype: 'Home business', newtype: 'Home business', secondary: '' },
-  { oldtype: 'Home occupation', newtype: 'Home occupation', secondary: '' },
-  { oldtype: 'Home industry', newtype: 'Home industry', secondary: '' },
-
-  // Secondary Structures and Modifications
-  { oldtype: 'Shed', newtype: '', secondary: 'X' },
-  { oldtype: 'Shipping containers', newtype: '', secondary: 'X' },
-  { oldtype: 'Swimming pool', newtype: '', secondary: 'X' },
-  { oldtype: 'Swimming pools', newtype: '', secondary: 'X' },
-  { oldtype: 'Portable swimming pools and spas and child-resistant barriers', newtype: '', secondary: 'X' },
-  { oldtype: 'Fences', newtype: '', secondary: 'X' },
-  { oldtype: 'Access ramp', newtype: '', secondary: 'X' },
-  { oldtype: 'Stairway', newtype: '', secondary: 'X' },
-  { oldtype: 'Privacy screens', newtype: '', secondary: 'X' },
-  { oldtype: 'Carport', newtype: '', secondary: 'X' },
-  { oldtype: 'Garage, carport or carparking space', newtype: '', secondary: 'X' },
-  { oldtype: 'Garages, carports and car parking spaces', newtype: '', secondary: 'X' },
-  { oldtype: 'Balcony, deck, patio, terrace or verandah', newtype: '', secondary: 'X' },
-  { oldtype: 'Balconies, decks, patios, terraces or verandahs', newtype: '', secondary: 'X' },
-  { oldtype: 'Balcony, deck, patio, terrace or verandah (screened enclosures)', newtype: '', secondary: 'X' },
-  { oldtype: 'Retaining walls, protection of trees', newtype: '', secondary: 'X' },
-
-  // Miscellaneous and Administrative
-  { oldtype: 'Other', newtype: '', secondary: 'X' },
-  { oldtype: 'Change of use', newtype: '', secondary: 'X' },
-  { oldtype: 'Change of use of land or a building or the classification of a building under the Building Code of Australia', newtype: '', secondary: 'X' },
-  { oldtype: 'Erection of a new structure', newtype: '', secondary: 'X' },
-  { oldtype: 'Demolition', newtype: '', secondary: 'X' },
-  { oldtype: 'Temporary structure', newtype: '', secondary: 'X' },
-  { oldtype: 'Temporary building, structure or use', newtype: '', secondary: 'X' },
-  { oldtype: 'Hours of operation and trading', newtype: '', secondary: 'X' },
-  { oldtype: 'Supporting Development', newtype: '', secondary: 'X' },
-  { oldtype: 'Signage', newtype: '', secondary: 'X' },
-  { oldtype: 'Advertising and signage', newtype: '', secondary: 'X' },
-  { oldtype: 'Advertising structure', newtype: '', secondary: 'X' },
-  { oldtype: 'Business identification sign', newtype: '', secondary: 'X' },
-  { oldtype: 'Building identification sign', newtype: '', secondary: 'X' },
-  { oldtype: 'Entertainment associated with existing premises', newtype: '', secondary: 'X' },
-  { oldtype: 'Emergency work and repairs', newtype: '', secondary: 'X' },
-  { oldtype: 'Maintenance of buildings in draft heritage conservation areas', newtype: '', secondary: 'X' },
-  { oldtype: 'Temporary installation following natural disaster', newtype: '', secondary: 'X' }
-];
-
-// Create a mapping of development types outside the component for better performance
-const typeMap = new Map(
-  devTypesData.map(row => [
-    row.oldtype, 
-    { 
-      newtype: row.newtype || row.oldtype, // If newtype is blank, use oldtype
-      secondary: row.secondary === 'X'  // True if secondary column contains 'X'
-    }
-  ])
-);
+import { LayersControl } from 'react-leaflet';
+import { getPropertyBoundaries } from '../utils/propertyBoundary';
+import { MapFilters } from './MapFilters';
+import { renderToString } from 'react-dom/server';
+import { 
+  devTypesData, 
+  typeMap, 
+  getDevelopmentCategory, 
+  developmentCategories 
+} from './developmentTypes';
+import { LayerControl } from "./Development/components/LayerControl";
+import { VectorBasemapLayer } from 'esri-leaflet-vector';
+import Dashboard from './Dashboard';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * Get default date range (12 months ago to today)
@@ -372,7 +165,7 @@ const processResults = (results) => {
   return Array.from(uniqueDevelopments.values());
 };
 
-// Add this helper function near the top with other helper functions
+
 const createFeature = (geometry, result) => ({
   type: "Feature",
   geometry,
@@ -402,13 +195,46 @@ const createFeature = (geometry, result) => ({
 
 // Add this helper function to check if a development type is residential
 const isResidentialType = (type) => {
-  // Find the first matching entry in devTypesData
-  const typeEntry = devTypesData.find(entry => 
-    entry.oldtype === type || entry.newtype === type
+  const mapping = typeMap.get(type);
+  return mapping?.category === 'Residential Types';
+};
+
+// Update the createIconHtml function to be reusable for both markers and popups
+const createIconHtml = (Icon, color, size = 'w-4 h-4') => {
+  const iconHtml = renderToString(
+    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border-2" style={{ borderColor: color }}>
+      <Icon className={size} style={{ color }} />
+    </div>
   );
-  
-  // Check if it's in the residential section (first 25 entries based on current data structure)
-  return typeEntry && devTypesData.indexOf(typeEntry) < 25;
+  return iconHtml;
+};
+
+// Add custom popup style
+const customPopupStyle = (color) => ({
+  className: 'custom-popup',
+  closeButton: true,
+  autoPan: true,
+  style: {
+    borderColor: color
+  }
+});
+
+// Add this helper function at the top of your component or in a utils file
+const formatDuration = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end - start);
+  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const years = Math.floor(days / 365);
+  const months = Math.floor((days % 365) / 30);
+  const remainingDays = days % 30;
+
+  let duration = [];
+  if (years > 0) duration.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+  if (months > 0) duration.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+  if (remainingDays > 0) duration.push(`${remainingDays} ${remainingDays === 1 ? 'day' : 'days'}`);
+
+  return duration.join(', ');
 };
 
 /**
@@ -457,6 +283,20 @@ const Development = () => {
   // Add this state for storing council boundary
   const [councilBoundary, setCouncilBoundary] = useState(null);
 
+  // Add this state for storing property boundaries
+  const [propertyBoundaries, setPropertyBoundaries] = useState({});
+
+  const mapRef = useRef();
+
+  // Add this state near other useState declarations
+  const [selectedResidentialTypes, setSelectedResidentialTypes] = useState([]);
+
+  // Add new state for filtered results
+  const [filteredResults, setFilteredResults] = useState(null);
+
+  // Add this with other state declarations (around line 530-550)
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+
   // Add this function to calculate area from geometry
   const calculateAreaFromGeometry = async (result) => {
     try {
@@ -473,14 +313,10 @@ const Development = () => {
 
   const fetchPage = async (pageNumber, filters) => {
     try {
-      const formattedCouncilName = filters.CouncilName ? 
-        filters.CouncilName === "City of Sydney" ? 
-          "COUNCIL OF THE CITY OF SYDNEY" : 
-          `${filters.CouncilName.toUpperCase()} COUNCIL` 
-        : undefined;
-
+      console.log('Fetching page', pageNumber, 'with filters:', filters);
+      
       const apiFilters = {
-        CouncilName: formattedCouncilName ? [formattedCouncilName] : undefined,
+        CouncilName: filters.CouncilName ? [filters.CouncilName] : undefined,
         ApplicationType: filters.ApplicationType,
         DevelopmentCategory: filters.DevelopmentCategory,
         ApplicationStatus: filters.ApplicationStatus,
@@ -493,40 +329,32 @@ const Development = () => {
         ApplicationLastUpdatedFrom: "2019-02-01"
       };
 
-      const baseUrl = '/api/eplanning';
-      const url = `${baseUrl}/data/v0/OnlineDA`;
-
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'filters': JSON.stringify({ filters: apiFilters })
-      };
-
-      console.log('Making request:', { url, headers });
-
-      const response = await fetch(url, {
+      const response = await fetch('/api/eplanning/data/v0/OnlineDA', {
         method: 'GET',
-        headers,
-        credentials: 'same-origin'
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'PageSize': '50000',
+          'PageNumber': pageNumber.toString(),
+          'filters': JSON.stringify({ filters: apiFilters })
+        }
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Raw Response:', response);
-        console.error('Detailed Error:', {
+        console.error('API Error:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorText,
-          headers: response.headers,
-          url: response.url
+          body: errorText
         });
-        throw new Error(`API Error: ${response.status}`);
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.error('API call error:', error);
-      throw new Error(`Failed to fetch development applications: ${error.message}`);
+      console.error('Fetch error:', error);
+      throw error;
     }
   };
 
@@ -1152,6 +980,44 @@ const fetchCouncilBoundary = async (councilName) => {
   }
 };
 
+  // Add this helper function to get unique categories from results
+  const getUniqueCategories = (results) => {
+    if (!results) return new Set();
+    
+    return new Set(
+      results.map(result => 
+        getDevelopmentCategory(cleanDevelopmentType(result.DevelopmentType))
+      ).filter(Boolean)
+    );
+  };
+
+  // Add this Legend component
+  const Legend = ({ categories }) => {
+    return (
+      <div className="leaflet-bottom leaflet-left" style={{ margin: '20px' }}>
+        <div className="leaflet-control bg-white p-3 rounded-lg shadow-md">
+          <h4 className="font-semibold mb-2 text-sm">Development Types</h4>
+          <div className="space-y-2">
+            {Array.from(categories).sort().map(category => {
+              const { icon: Icon, color } = developmentCategories[category];
+              return (
+                <div key={category} className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center justify-center bg-white rounded-full p-1"
+                    style={{ border: `2px solid ${color}` }}
+                  >
+                    <Icon size={14} color={color} />
+                  </div>
+                  <span className="text-xs">{category}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -1159,688 +1025,815 @@ const fetchCouncilBoundary = async (councilName) => {
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <AnimatedDevLogo />
-            <h1 className="text-xl font-semibold text-gray-900">NSW Development Applications</h1>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">NSW Development Applications</h1>
+              <p className="text-sm text-gray-600">
+                Data sourced from the NSW Government's <a href="https://www.planningportal.nsw.gov.au/opendata/dataset/online-da-data-api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Online Development Application API</a>
+              </p>
+            </div>
           </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Development Dashboard</DialogTitle>
+              </DialogHeader>
+              <Dashboard />
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Search and Results */}
-        <div className="w-1/2 overflow-y-auto">
-          <div className="p-6">
-          {/* Existing search form and results content */}
-          {isQueryVisible && (
-            <form onSubmit={handleSearch} className="space-y-6 mb-6">
-              <div>
-                <label className="font-medium">Council Name</label>
-                <div className="mt-1">
-                  <Combobox
-                    options={councils}
-                    value={council}
-                    onChange={setCouncil}
-                    placeholder="Select a council"
-                    emptyText="No matching councils found"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-medium">Development Category</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Select All")}
-                    onClick={() => handleCategoryClick("Select All")}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Residential")}
-                    onClick={() => handleCategoryClick("Residential")}
-                    className="gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                    </svg>
-                    Residential
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Commercial")}
-                    onClick={() => handleCategoryClick("Commercial")}
-                    className="gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h6v4H7V5z" clipRule="evenodd" />
-                    </svg>
-                    Commercial
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Industrial")}
-                    onClick={() => handleCategoryClick("Industrial")}
-                    className="gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-                    </svg>
-                    Industrial
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Recreational")}
-                    onClick={() => handleCategoryClick("Recreational")}
-                    className="gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                    Recreational
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedCategories, "Other")}
-                    onClick={() => handleCategoryClick("Other")}
-                    className="gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                    Other
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-medium">Application Type</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedTypes, "Select All")}
-                    onClick={() => handleTypeClick("Select All")}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedTypes, "Development Application")}
-                    onClick={() => handleTypeClick("Development Application")}
-                  >
-                    Development Application
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedTypes, "Modification Application")}
-                    onClick={() => handleTypeClick("Modification Application")}
-                  >
-                    Modification Application
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedTypes, "Review of Determination")}
-                    onClick={() => handleTypeClick("Review of Determination")}
-                  >
-                    Review of Determination
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-medium">Application Status</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Select All")}
-                    onClick={() => handleStatusClick("Select All")}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Under Assessment")}
-                    onClick={() => handleStatusClick("Under Assessment")}
-                    className="gap-2"
-                  >
-                    <HourglassIcon className="h-4 w-4" />
-                    Under Assessment
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Determined")}
-                    onClick={() => handleStatusClick("Determined")}
-                    className="gap-2"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Determined
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "On Exhibition")}
-                    onClick={() => handleStatusClick("On Exhibition")}
-                    className="gap-2"
-                  >
-                    <Eye className="h-4 w-4" />
-                    On Exhibition
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Additional Information Requested")}
-                    onClick={() => handleStatusClick("Additional Information Requested")}
-                    className="gap-2"
-                  >
-                    <FileQuestion className="h-4 w-4" />
-                    Additional Information Requested
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Pending Lodgement")}
-                    onClick={() => handleStatusClick("Pending Lodgement")}
-                    className="gap-2"
-                  >
-                    <Clock className="h-4 w-4" />
-                    Pending Lodgement
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Rejected")}
-                    onClick={() => handleStatusClick("Rejected")}
-                    className="gap-2"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Rejected
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Pending Court Appeal")}
-                    onClick={() => handleStatusClick("Pending Court Appeal")}
-                    className="gap-2"
-                  >
-                    <Scale className="h-4 w-4" />
-                    Pending Court Appeal
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Withdrawn")}
-                    onClick={() => handleStatusClick("Withdrawn")}
-                    className="gap-2"
-                  >
-                    <MinusCircle className="h-4 w-4" />
-                    Withdrawn
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={getButtonVariant(selectedStatuses, "Deferred Commencement")}
-                    onClick={() => handleStatusClick("Deferred Commencement")}
-                    className="gap-2"
-                  >
-                    <PauseCircle className="h-4 w-4" />
-                    Deferred Commencement
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-medium">Cost of Development ($ millions)</label>
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-600">From:</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
-                        $
-                      </span>
-                      <Input
-                        type="text"
-                        value={(Number(costFrom) / 1000000).toFixed(1)}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.]/g, '');
-                          setCostFrom(Math.round(parseFloat(value) * 1000000));
-                        }}
-                        className="rounded-l-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-sm text-gray-600">To:</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
-                        $
-                      </span>
-                      <Input
-                        type="text"
-                        value={(Number(costTo) / 1000000).toFixed(1)}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.]/g, '');
-                          setCostTo(Math.round(parseFloat(value) * 1000000));
-                        }}
-                        className="rounded-l-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="font-medium">Lodgement Date From</label>
-                  <Input
-                    type="date"
-                    value={lodgementDateFrom}
-                    onChange={(e) => setLodgementDateFrom(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="font-medium">Lodgement Date To</label>
-                  <Input
-                    type="date"
-                    value={lodgementDateTo}
-                    onChange={(e) => setLodgementDateTo(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="font-medium">Determination Date From (optional)</label>
-                  <Input
-                    type="date"
-                    value={determinationDateFrom}
-                    onChange={(e) => setDeterminationDateFrom(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="font-medium">Determination Date To (optional)</label>
-                  <Input
-                    type="date"
-                    value={determinationDateTo}
-                    onChange={(e) => setDeterminationDateTo(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  className="flex items-center gap-2" 
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4" />
-                      Search
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleCSVDownload}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Download CSV
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleGeoJSONDownload}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Download GeoJSON
-                </Button>
-              </div>
-
-              {searchResults && searchResults.length > 0 && (
-                <div className="mb-4 relative">
-
-
-                  {isLayerLoading && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center rounded">
-                      <div className="flex items-center gap-2 text-blue-600">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="font-medium">Building layer...</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </form>
-          )}
-
-          {/* Results */}
-          {!loading && searchResults && (
-            <>
-              <Card className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-4">Applications by Development Type</h3>
-                <div className="h-[600px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={chartData.byType}
-                      margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 150
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis 
-                        dataKey="name" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        height={80}
-                        interval={0}
-                        tick={{ fontSize: 14 }}
-                        tickFormatter={(value) => {
-                          return value.length > 40 ? value.substring(0, 20) + '...' : value;
-                        }}
-                      />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend 
-                        verticalAlign="bottom"
-                        align="center"
-                        height={36}
-                        wrapperStyle={{ 
-                          bottom: 20,
-                          left: 25,
-                          width: '95%'
-                        }}
-                        formatter={(value) => {
-                          const icons = {
-                            "Under Assessment": <HourglassIcon className="w-4 h-4 inline mr-1" />,
-                            "Determined": <CheckCircle2 className="w-4 h-4 inline mr-1" />,
-                            "On Exhibition": <Eye className="w-4 h-4 inline mr-1" />,
-                            "Additional Info Requested": <FileQuestion className="w-4 h-4 inline mr-1" />,
-                            "Pending Lodgement": <Clock className="w-4 h-4 inline mr-1" />,
-                            "Rejected": <XCircle className="w-4 h-4 inline mr-1" />,
-                            "Pending Court Appeal": <Scale className="w-4 h-4 inline mr-1" />,
-                            "Withdrawn": <MinusCircle className="w-4 h-4 inline mr-1" />,
-                            "Deferred Commencement": <PauseCircle className="w-4 h-4 inline mr-1" />
-                          };
-                          return <span>{icons[value]}{value}</span>;
-                        }}
-                      />
-                      <Bar name="Under Assessment" dataKey="underAssessment" stackId="status" fill="#ffa07a" />
-                      <Bar name="Determined" dataKey="determined" stackId="status" fill="#90ee90" />
-                      <Bar name="On Exhibition" dataKey="onExhibition" stackId="status" fill="#87cefa" />
-                      <Bar name="Additional Info Requested" dataKey="additionalInfoRequested" stackId="status" fill="#dda0dd" />
-                      <Bar name="Pending Lodgement" dataKey="pendingLodgement" stackId="status" fill="#b8c2cc" />
-                      <Bar name="Rejected" dataKey="rejected" stackId="status" fill="#ffb6c1" />
-                      <Bar name="Pending Court Appeal" dataKey="pendingCourtAppeal" stackId="status" fill="#f0e68c" />
-                      <Bar name="Withdrawn" dataKey="withdrawn" stackId="status" fill="#d3d3d3" />
-                      <Bar name="Deferred Commencement" dataKey="deferredCommencement" stackId="status" fill="#98fb98" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Total Value by Development Type - Total ${chartData.totalValueSum} million
-                </h3>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData.totalValue}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                        <Bar dataKey="value" fill="#60a5fa" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-
-                <Card className="p-4 mt-6">
-                  <h3 className="text-lg font-semibold mb-4">Average Cost by Development Type ($ millions)</h3>
-                  <div className="w-full">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={chartData.averageCost}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                        <Bar dataKey="value" fill="#34d399" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-
-                <Card className="p-4 mt-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Average Days to Determination by Development Type
-                  </h3>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData.averageDays}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `${value} days`} />
-                        <Bar dataKey="value" fill="#f472b6" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-
-                <Card className="p-4 mt-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Average Cost per Dwelling by Development Type ($ millions)
-                  </h3>
-                  <div className="w-full">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart 
-                        data={chartData.costPerDwelling}
-                        margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="name" 
-                          angle={-45} 
-                          textAnchor="end" 
-                          height={100} 
-                          interval={0} 
-                          tick={{ fontSize: 14 }}
-                        />
-                        <YAxis 
-                          tickFormatter={(value) => `$${value.toFixed(1)}M`}
-                        />
-                        <Tooltip 
-                          formatter={(value) => `$${value.toFixed(1)}M`}
-                          labelFormatter={(label) => `Development Type: ${label}`}
-                        />
-                        <Bar dataKey="value" fill="#60a5fa" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="text-sm text-gray-500 mt-2">
-                    Only showing types with 3+ developments.
-                  </div>
-                </Card>
-
-                <div className="mt-6">
-                  <h2 className="text-lg font-semibold mb-4">
-                    Search Results ({sortedResults.length} applications found)
-                  </h2>
-                  <div className="bg-white rounded-lg shadow max-w-full">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 text-xs">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <ResizableColumn 
-                              width={columnWidths.address} 
-                              onResize={(width) => handleResize('address', width)}
-                            >
-                              Address
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.lots}
-                              onResize={(width) => handleResize('lots', width)}
-                            >
-                              Lots
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.type}
-                              onResize={(width) => handleResize('type', width)}
-                            >
-                              Type
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.development}
-                              onResize={(width) => handleResize('development', width)}
-                            >
-                              Development
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.status}
-                              onResize={(width) => handleResize('status', width)}
-                            >
-                              Status
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.lodged}
-                              onResize={(width) => handleResize('lodged', width)}
-                            >
-                              Lodged
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.days}
-                              onResize={(width) => handleResize('days', width)}
-                            >
-                              Days
-                            </ResizableColumn>
-                            <ResizableColumn 
-                              width={columnWidths.cost}
-                              onResize={(width) => handleResize('cost', width)}
-                            >
-                              Cost
-                            </ResizableColumn>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {sortedResults.map((result, index) => (
-                            <tr key={result.PlanningPortalApplicationNumber || index}>
-                              <td style={{ width: columnWidths.address }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                                {result.Location?.[0]?.FullAddress || 'N/A'}
-                              </td>
-                              <td style={{ width: columnWidths.lots }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                                {result.Location?.[0]?.Lot?.map((lot, index) => (
-                                  <span key={index}>
-                                    {lot.Lot && lot.PlanLabel 
-                                      ? `${lot.Lot}//${lot.PlanLabel}`
-                                      : lot.Lot}
-                                    {index < result.Location[0].Lot.length - 1 ? ', ' : ''}
-                                  </span>
-                                )) || 'N/A'}
-                              </td>
-                              <td style={{ width: columnWidths.type }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                                {result.ApplicationType === "Development Application" ? "DA" :
-                                 result.ApplicationType === "Modification Application" ? "MOD" :
-                                 result.ApplicationType === "Review of Determination" ? "Review" : 
-                                 result.ApplicationType}
-                              </td>
-                              <td style={{ width: columnWidths.development }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                                {cleanDevelopmentType(result.DevelopmentType)}
-                              </td>
-                              <td style={{ width: columnWidths.status }} className="px-2 py-2 text-gray-900 break-words text-xs">
-                                {result.ApplicationStatus}
-                              </td>
-                              <td style={{ width: columnWidths.lodged }} className="px-2 py-2 text-gray-900 whitespace-nowrap text-xs">
-                                {format(new Date(result.LodgementDate), 'dd MMM yyyy')}
-                              </td>
-                              <td style={{ width: columnWidths.days }} className="px-2 py-2 text-gray-900 text-center text-xs">
-                                {Math.floor((new Date(result.DeterminationDate || new Date()) - new Date(result.LodgementDate)) / (1000 * 60 * 60 * 24))}
-                              </td>
-                              <td style={{ width: columnWidths.cost }} className="px-2 py-2 text-gray-900 text-right text-xs">
-                                ${result.CostOfDevelopment?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </>
+        <div className={`${isLeftPanelCollapsed ? 'w-12' : 'w-2/5'} relative transition-all duration-300 ease-in-out border-r border-gray-200`}>
+          {/* Collapse button */}
+          <button
+            onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+            className="absolute -right-3 top-2 z-10 bg-white border border-gray-200 rounded-full p-1 shadow-md hover:bg-gray-50"
+          >
+            {isLeftPanelCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-gray-600" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 text-gray-600" />
             )}
-          </div>
-        </div>
+          </button>
+          
+          {/* Content container */}
+          <div className={`${isLeftPanelCollapsed ? 'hidden' : 'block'} h-[calc(100vh-4rem)] overflow-y-auto`}>
+            <div className="p-6">
+              {/* Existing content */}
+              {isQueryVisible && (
+                <form onSubmit={handleSearch} className="space-y-6 mb-6">
+                  <div>
+                    <label className="font-medium">Council Name</label>
+                    <div className="mt-1">
+                      <Combobox
+                        options={councils}
+                        value={council}
+                        onChange={setCouncil}
+                        placeholder="Select a council"
+                        emptyText="No matching councils found"
+                      />
+                    </div>
+                  </div>
 
-        {/* Right Panel - Map */}
-        <div className="w-1/2">
-          <div className="map-container">
-            <MapContainer 
-              center={[-33.8688, 151.2093]}
-              zoom={10}
-              bounds={searchResults?.length > 0 ? getBounds(searchResults) : undefined}
-              className="h-full w-full"
-              scrollWheelZoom={true}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              {councilBoundary && (
-                <GeoJSON 
-                  data={councilBoundary}
-                  style={{
-                    color: '#ff0000',
-                    weight: 2,
-                    fillOpacity: 0.1
-                  }}
-                  eventHandlers={{
-                    add: (e) => {
-                      console.log('GeoJSON added to map');
-                      const map = e.target._map;
-                      try {
-                        const bounds = e.target.getBounds();
-                        console.log('Fitting to bounds:', bounds);
-                        map.fitBounds(bounds, { padding: [50, 50] });
-                      } catch (error) {
-                        console.error('Error fitting to bounds:', error);
-                      }
-                    }
-                  }}
-                />
-              )}
-              {searchResults?.map((result, index) => (
-                result.Location?.[0]?.X && result.Location?.[0]?.Y && (
-                  <Marker
-                    key={index}
-                    position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
-                    icon={L.divIcon({
-                      className: 'bg-red-500 rounded-full w-3 h-3',
-                      iconSize: [12, 12],
-                      iconAnchor: [6, 6]
-                    })}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <p className="font-semibold">{result.Location[0].FullAddress}</p>
-                        <p>Type: {result.ApplicationType}</p>
-                        <p>Development: {cleanDevelopmentType(result.DevelopmentType)}</p>
-                        <p>Status: {result.ApplicationStatus}</p>
-                        <p>Cost: ${result.CostOfDevelopment?.toLocaleString()}</p>
+                  <div>
+                    <label className="font-medium">Development Category</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Select All")}
+                        onClick={() => handleCategoryClick("Select All")}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Residential")}
+                        onClick={() => handleCategoryClick("Residential")}
+                        className="gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        Residential
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Commercial")}
+                        onClick={() => handleCategoryClick("Commercial")}
+                        className="gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h6v4H7V5z" clipRule="evenodd" />
+                        </svg>
+                        Commercial
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Industrial")}
+                        onClick={() => handleCategoryClick("Industrial")}
+                        className="gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+                        </svg>
+                        Industrial
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Recreational")}
+                        onClick={() => handleCategoryClick("Recreational")}
+                        className="gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        Recreational
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedCategories, "Other")}
+                        onClick={() => handleCategoryClick("Other")}
+                        className="gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        Other
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-medium">Application Type</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedTypes, "Select All")}
+                        onClick={() => handleTypeClick("Select All")}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedTypes, "Development Application")}
+                        onClick={() => handleTypeClick("Development Application")}
+                      >
+                        Development Application
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedTypes, "Modification Application")}
+                        onClick={() => handleTypeClick("Modification Application")}
+                      >
+                        Modification Application
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedTypes, "Review of Determination")}
+                        onClick={() => handleTypeClick("Review of Determination")}
+                      >
+                        Review of Determination
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-medium">Application Status</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Select All")}
+                        onClick={() => handleStatusClick("Select All")}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Under Assessment")}
+                        onClick={() => handleStatusClick("Under Assessment")}
+                        className="gap-2"
+                      >
+                        <HourglassIcon className="h-4 w-4" />
+                        Under Assessment
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Determined")}
+                        onClick={() => handleStatusClick("Determined")}
+                        className="gap-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Determined
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "On Exhibition")}
+                        onClick={() => handleStatusClick("On Exhibition")}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        On Exhibition
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Additional Information Requested")}
+                        onClick={() => handleStatusClick("Additional Information Requested")}
+                        className="gap-2"
+                      >
+                        <FileQuestion className="h-4 w-4" />
+                        Additional Information Requested
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Pending Lodgement")}
+                        onClick={() => handleStatusClick("Pending Lodgement")}
+                        className="gap-2"
+                      >
+                        <Clock className="h-4 w-4" />
+                        Pending Lodgement
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Rejected")}
+                        onClick={() => handleStatusClick("Rejected")}
+                        className="gap-2"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Rejected
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Pending Court Appeal")}
+                        onClick={() => handleStatusClick("Pending Court Appeal")}
+                        className="gap-2"
+                      >
+                        <Scale className="h-4 w-4" />
+                        Pending Court Appeal
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Withdrawn")}
+                        onClick={() => handleStatusClick("Withdrawn")}
+                        className="gap-2"
+                      >
+                        <MinusCircle className="h-4 w-4" />
+                        Withdrawn
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={getButtonVariant(selectedStatuses, "Deferred Commencement")}
+                        onClick={() => handleStatusClick("Deferred Commencement")}
+                        className="gap-2"
+                      >
+                        <PauseCircle className="h-4 w-4" />
+                        Deferred Commencement
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-medium">Cost of Development ($ millions)</label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex-1">
+                        <label className="text-sm text-gray-600">From:</label>
+                        <div className="flex">
+                          <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
+                            $
+                          </span>
+                          <Input
+                            type="text"
+                            value={(Number(costFrom) / 1000000).toFixed(1)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              setCostFrom(Math.round(parseFloat(value) * 1000000));
+                            }}
+                            className="rounded-l-none"
+                          />
+                        </div>
                       </div>
-                    </Popup>
-                  </Marker>
-                )
-              ))}
-            </MapContainer>
+                      <div className="flex-1">
+                        <label className="text-sm text-gray-600">To:</label>
+                        <div className="flex">
+                          <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
+                            $
+                          </span>
+                          <Input
+                            type="text"
+                            value={(Number(costTo) / 1000000).toFixed(1)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              setCostTo(Math.round(parseFloat(value) * 1000000));
+                            }}
+                            className="rounded-l-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="font-medium">Lodgement Date From</label>
+                      <Input
+                        type="date"
+                        value={lodgementDateFrom}
+                        onChange={(e) => setLodgementDateFrom(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="font-medium">Lodgement Date To</label>
+                      <Input
+                        type="date"
+                        value={lodgementDateTo}
+                        onChange={(e) => setLodgementDateTo(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="font-medium">Determination Date From (optional)</label>
+                      <Input
+                        type="date"
+                        value={determinationDateFrom}
+                        onChange={(e) => setDeterminationDateFrom(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="font-medium">Determination Date To (optional)</label>
+                      <Input
+                        type="date"
+                        value={determinationDateTo}
+                        onChange={(e) => setDeterminationDateTo(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      type="submit" 
+                      className="flex items-center gap-2" 
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-4 w-4" />
+                          Search
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCSVDownload}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Download CSV
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleGeoJSONDownload}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Download GeoJSON
+                    </Button>
+                  </div>
+
+                  {searchResults && searchResults.length > 0 && (
+                    <div className="mb-4 relative">
+
+
+
+
+
+                      {isLayerLoading && (
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center rounded">
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="font-medium">Building layer...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </form>
+              )}
+
+              {/* Results */}
+              {!loading && searchResults && (
+                <>
+                  <Card className="p-4 mt-6">
+                    <h3 className="text-lg font-semibold mb-4">Applications by Development Type</h3>
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={chartData.byType.map(item => ({
+                            name: item.name,
+                            total: item.underAssessment + item.determined + item.onExhibition + 
+                                   item.additionalInfoRequested + item.pendingLodgement + item.rejected + 
+                                   item.pendingCourtAppeal + item.withdrawn + item.deferredCommencement
+                          })).sort((a, b) => b.total - a.total)}
+                          margin={{
+                            top: 20,
+                            right: 30,
+                            left: 20,
+                            bottom: 80
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                          <XAxis 
+                            dataKey="name" 
+                            angle={-45} 
+                            textAnchor="end" 
+                            height={80}
+                            interval={0}
+                            tick={{ fontSize: 14 }}
+                            tickFormatter={(value) => {
+                              return value.length > 40 ? value.substring(0, 20) + '...' : value;
+                            }}
+                          />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar 
+                            name="Total Applications" 
+                            dataKey="total" 
+                            fill="#4F46E5"  // You can change this color as needed
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  <Card className="p-4 mt-6">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Total Value by Development Type - Total ${chartData.totalValueSum} million
+                    </h3>
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData.totalValue}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 50 }} 
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
+    return value.length > 25 ? value.substring(0, 20) + '...' : value;
+  }} />
+                          <YAxis />
+                          <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
+                            <Bar dataKey="value" fill="#60a5fa" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 mt-6">
+                      <h3 className="text-lg font-semibold mb-4">Average Cost by Development Type ($ millions)</h3>
+                      <div className="w-full">
+                        <ResponsiveContainer width="100%" height={400}>
+                          <BarChart data={chartData.averageCost}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 50 }}                      
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
+    return value.length > 25 ? value.substring(0, 20) + '...' : value;
+  }} />
+                            <YAxis />
+                            <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
+                            <Bar dataKey="value" fill="#34d399" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 mt-6">
+                      <h3 className="text-lg font-semibold mb-4">
+                        Average Days to Determination by Development Type
+                      </h3>
+                      <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData.averageDays}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 50 }}  
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
+    return value.length > 25 ? value.substring(0, 20) + '...' : value;
+  }}  />
+                            <YAxis />
+                            <Tooltip formatter={(value) => `${value} days`} />
+                            <Bar dataKey="value" fill="#f472b6" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 mt-6">
+                      <h3 className="text-lg font-semibold mb-4">
+                        Average Cost per Dwelling by Development Type ($ millions)
+                      </h3>
+                      <div className="w-full">
+                        <ResponsiveContainer width="100%" height={400}>
+                          <BarChart 
+                            data={chartData.costPerDwelling}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
+    return value.length > 25 ? value.substring(0, 20) + '...' : value;
+  }}
+                            />
+                            <YAxis 
+                              tickFormatter={(value) => `$${value.toFixed(1)}M`}
+                            />
+                            <Tooltip 
+                              formatter={(value) => `$${value.toFixed(1)}M`}
+                              labelFormatter={(label) => `Development Type: ${label}`}
+                            />
+                            <Bar dataKey="value" fill="#60a5fa" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="text-sm text-gray-500 mt-2">
+                        Only showing types with 3+ developments.
+                      </div>
+                    </Card>
+
+                    <div className="mt-6">
+                      <h2 className="text-lg font-semibold mb-4">
+                        Search Results ({sortedResults.length} applications found)
+                      </h2>
+                      <div className="bg-white rounded-lg shadow max-w-full">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200 text-xs">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <ResizableColumn 
+                                  width={columnWidths.address} 
+                                  onResize={(width) => handleResize('address', width)}
+                                >
+                                  Address
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.lots}
+                                  onResize={(width) => handleResize('lots', width)}
+                                >
+                                  Lots
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.type}
+                                  onResize={(width) => handleResize('type', width)}
+                                >
+                                  Type
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.development}
+                                  onResize={(width) => handleResize('development', width)}
+                                >
+                                  Development
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.status}
+                                  onResize={(width) => handleResize('status', width)}
+                                >
+                                  Status
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.lodged}
+                                  onResize={(width) => handleResize('lodged', width)}
+                                >
+                                  Lodged
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.days}
+                                  onResize={(width) => handleResize('days', width)}
+                                >
+                                  <div className="text-center">Days</div>
+                                </ResizableColumn>
+                                <ResizableColumn 
+                                  width={columnWidths.cost}
+                                  onResize={(width) => handleResize('cost', width)}
+                                >
+                                  <div className="text-right">Cost</div>
+                                </ResizableColumn>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {sortedResults.map((result, index) => (
+                                <tr key={result.PlanningPortalApplicationNumber || index}>
+                                  <td style={{ width: columnWidths.address }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                    {result.Location?.[0]?.FullAddress || 'N/A'}
+                                  </td>
+                                  <td style={{ width: columnWidths.lots }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                    {result.Location?.[0]?.Lot?.map((lot, index) => (
+                                      <span key={index}>
+                                        {lot.Lot && lot.PlanLabel 
+                                          ? `${lot.Lot}//${lot.PlanLabel}`
+                                          : lot.Lot}
+                                        {index < result.Location[0].Lot.length - 1 ? ', ' : ''}
+                                      </span>
+                                    )) || 'N/A'}
+                                  </td>
+                                  <td style={{ width: columnWidths.type }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                    {result.ApplicationType === "Development Application" ? "DA" :
+                                     result.ApplicationType === "Modification Application" ? "MOD" :
+                                     result.ApplicationType === "Review of Determination" ? "Review" : 
+                                     result.ApplicationType}
+                                  </td>
+                                  <td style={{ width: columnWidths.development }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                    {cleanDevelopmentType(result.DevelopmentType)}
+                                  </td>
+                                  <td style={{ width: columnWidths.status }} className="px-2 py-2 text-gray-900 break-words text-xs">
+                                    {result.ApplicationStatus}
+                                  </td>
+                                  <td style={{ width: columnWidths.lodged }} className="px-2 py-2 text-gray-900 whitespace-nowrap text-xs">
+                                    {format(new Date(result.LodgementDate), 'dd MMM yyyy')}
+                                  </td>
+                                  <td style={{ width: columnWidths.days }} className="px-2 py-2 text-gray-900 text-center text-xs">
+                                    {Math.floor((new Date(result.DeterminationDate || new Date()) - new Date(result.LodgementDate)) / (1000 * 60 * 60 * 24))}
+                                  </td>
+                                  <td style={{ width: columnWidths.cost }} className="px-2 py-2 text-gray-900 text-right text-xs">
+                                    ${result.CostOfDevelopment?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Map */}
+          <div className={`${isLeftPanelCollapsed ? 'w-[calc(100%-3rem)]' : 'w-3/5'} transition-all duration-300 ease-in-out`}>
+            <div className="map-container relative h-screen">
+              <MapContainer 
+                center={[-33.8688, 151.2093]}
+                zoom={10}
+                bounds={searchResults?.length > 0 ? getBounds(searchResults) : undefined}
+                className="h-full w-full"
+                scrollWheelZoom={true}
+              >
+                <LayersControl position="topright">
+                  <LayersControl.BaseLayer checked name="OpenStreetMap">
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                  </LayersControl.BaseLayer>
+                  <LayersControl.BaseLayer name="NSW Imagery">
+                    <TileLayer
+                      url="https://maps.six.nsw.gov.au/arcgis/rest/services/public/NSW_Imagery/MapServer/tile/{z}/{y}/{x}"
+                      attribution='&copy; NSW Department of Customer Service (Spatial Services), 2024'
+                      maxZoom={20}
+                    />
+                  </LayersControl.BaseLayer>
+                </LayersControl>
+                <LayerControl />
+                <MapFilters 
+                  selectedTypes={selectedResidentialTypes}
+                  setSelectedTypes={setSelectedResidentialTypes}
+                  searchResults={searchResults}
+                  setFilteredResults={setFilteredResults}
+                  cleanDevelopmentType={cleanDevelopmentType}
+                />
+                {councilBoundary && (
+                  <GeoJSON 
+                    key={council} // Add this line to force re-render
+                    data={councilBoundary}
+                    style={{
+                      color: '#ff0000',
+                      weight: 4,
+                      fillOpacity: 0,
+                    }}
+                    eventHandlers={{
+                      add: (e) => {
+                        console.log('GeoJSON added to map');
+                        const map = e.target._map;
+                        try {
+                          const bounds = e.target.getBounds();
+                          console.log('Fitting to bounds:', bounds);
+                          map.fitBounds(bounds, { padding: [50, 50] });
+                        } catch (error) {
+                          console.error('Error fitting to bounds:', error);
+                        }
+                      }
+                    }}
+                  />
+                )}
+                {filteredResults?.map(result => {
+                  if (!result.Location?.[0]?.X || !result.Location?.[0]?.Y) return null;
+                  
+                  const category = getDevelopmentCategory(cleanDevelopmentType(result.DevelopmentType));
+                  const { icon: Icon, color } = developmentCategories[category] || 
+                    developmentCategories['Miscellaneous and Administrative'];
+                  
+                  return (
+                    <Marker
+                      key={result.PlanningPortalApplicationNumber}
+                      position={[parseFloat(result.Location[0].Y), parseFloat(result.Location[0].X)]}
+                      icon={L.divIcon({
+                        className: 'custom-div-icon',
+                        html: createIconHtml(Icon, color),
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                      })}
+                    >
+                      <Popup
+                        className="custom-popup"
+                        closeButton={true}
+                        autoPan={true}
+                      >
+                        <div 
+                          className="custom-popup-content border-2 rounded-lg p-3 min-w-[400px] relative"
+                          style={{ borderColor: color }}
+                        >
+                          <div className="text-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Icon className="w-5 h-5" style={{ color }} />
+                              <span className="font-semibold text-base">{result.Location?.[0]?.FullAddress}</span>
+                            </div>
+                            <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+                              <span className="text-gray-600 whitespace-nowrap">Application Number:</span>
+                              <span>{result.PlanningPortalApplicationNumber}</span>
+                              
+                              <span className="text-gray-600 whitespace-nowrap">Type:</span>
+                              <span>{result.ApplicationType}</span>
+                              
+                              <span className="text-gray-600 whitespace-nowrap">Development:</span>
+                              <span>{cleanDevelopmentType(result.DevelopmentType)}</span>
+                              
+                              <span className="text-gray-600 whitespace-nowrap">Status:</span>
+                              <span className="flex items-center gap-2">
+                                {result.ApplicationStatus}
+                                {result.ApplicationStatus === "Under Assessment" && <HourglassIcon className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Determined" && <CheckCircle2 className="h-4 w-4" />}
+                                {result.ApplicationStatus === "On Exhibition" && <Eye className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Additional Information Requested" && <FileQuestion className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Pending Lodgement" && <Clock className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Rejected" && <XCircle className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Pending Court Appeal" && <Scale className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Withdrawn" && <MinusCircle className="h-4 w-4" />}
+                                {result.ApplicationStatus === "Deferred Commencement" && <PauseCircle className="h-4 w-4" />}
+                              </span>
+                              
+                              {result.CostOfDevelopment && (
+                                <>
+                                  <span className="text-gray-600 whitespace-nowrap">Cost:</span>
+                                  <span>${Math.round(result.CostOfDevelopment).toLocaleString()}</span>
+                                </>
+                              )}
+                              
+                              {result.NumberOfNewDwellings >= 0 && (
+                                <>
+                                  <span className="text-gray-600 whitespace-nowrap">Number of New Dwellings:</span>
+                                  <span>{result.NumberOfNewDwellings}</span>
+                                </>
+                              )}
+                              
+                              {result.NumberOfStoreys > 0 && (
+                                <>
+                                  <span className="text-gray-600 whitespace-nowrap">Number of Storeys:</span>
+                                  <span>{result.NumberOfStoreys}</span>
+                                </>
+                              )}
+
+                              <span className="text-gray-600 whitespace-nowrap">Lodgement Date:</span>
+                              <span>{format(new Date(result.LodgementDate), 'd MMMM yyyy')}</span>
+
+                              {result.DeterminationDate && (
+                                <>
+                                  <span className="text-gray-600 whitespace-nowrap">Determination Date:</span>
+                                  <span>{format(new Date(result.DeterminationDate), 'd MMMM yyyy')}</span>
+                                  
+                                  <span className="text-gray-600 whitespace-nowrap">Time to Determination:</span>
+                                  <span>{formatDuration(result.LodgementDate, result.DeterminationDate)}</span>
+                                </>
+                              )}
+                              
+                              {!result.DeterminationDate && (
+                                <>
+                                  <span className="text-gray-600 whitespace-nowrap">Time Elapsed:</span>
+                                  <span>{formatDuration(result.LodgementDate, new Date())}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+                
+                {filteredResults && (
+                  <Legend categories={getUniqueCategories(filteredResults)} />
+                )}
+              </MapContainer>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
   );
 };
 

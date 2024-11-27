@@ -2,16 +2,18 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/eplanning/[...path].js": {
-      "memory": 3008,
-      "maxDuration": 300
-    }
-  },
   "rewrites": [
     {
       "source": "/api/eplanning/:path*",
       "destination": "/api/eplanning/[...path]"
+    },
+    {
+      "source": "/api/admin/batch-process",
+      "destination": "/api/admin/batch-process"
+    },
+    {
+      "source": "/api/admin/batch-process/status",
+      "destination": "/api/admin/batch-process/status"
     }
   ],
   "headers": [
@@ -20,8 +22,14 @@
       "headers": [
         { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "PageSize, PageNumber, filters, Content-Type, Accept" }
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS, POST"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "PageSize, PageNumber, filters, Content-Type, Accept, Authorization"
+        }
       ]
     }
   ]

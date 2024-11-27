@@ -16,6 +16,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('API Request received:', {
+      method: req.method,
+      headers: req.headers,
+      filters: req.headers.filters
+    });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT);
 
@@ -63,10 +69,11 @@ export default async function handler(req, res) {
     const data = await response.json();
     res.status(200).json(data);
   } catch (error) {
-    console.error('Handler error:', error);
-    res.status(error.name === 'AbortError' ? 504 : 500).json({
+    console.error('API Handler error:', error);
+    res.status(500).json({
       error: {
-        message: error.message
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }
     });
   }

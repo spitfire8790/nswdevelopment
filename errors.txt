@@ -1,0 +1,107 @@
+Albury City Council: HTTP error! status: 400
+Armidale Regional Council: HTTP error! status: 400
+Ballina Shire Council: HTTP error! status: 400
+Bathurst Regional Council: HTTP error! status: 400
+Bayside Council: HTTP error! status: 400
+Bega Valley Shire Council: HTTP error! status: 400
+Bellingen Shire Council: HTTP error! status: 400
+Berrigan Shire Council: HTTP error! status: 400
+Blacktown City Council: HTTP error! status: 400
+Bland Shire Council: HTTP error! status: 400
+Blayney Shire Council: HTTP error! status: 400
+Blue Mountains City Council: HTTP error! status: 400
+Bogan Shire Council: HTTP error! status: 400
+Bourke Shire Council: HTTP error! status: 400
+Brewarrina Shire Council: HTTP error! status: 400
+Broken Hill City Council: HTTP error! status: 400
+Burwood Council: HTTP error! status: 400
+Byron Shire Council: HTTP error! status: 400
+Cabonne Council: HTTP error! status: 400
+Camden Council: HTTP error! status: 400
+Campbelltown City Council: HTTP error! status: 400
+Canterbury-Bankstown Council: HTTP error! status: 400
+Central Coast Council: HTTP error! status: 400
+Central Darling Shire Council: HTTP error! status: 400
+Cessnock City Council: HTTP error! status: 400
+City of Canada Bay Council: HTTP error! status: 400
+City of Parramatta Council: HTTP error! status: 400
+City of Sydney: HTTP error! status: 400
+Clarence Valley Council: HTTP error! status: 400
+Cobar Shire Council: HTTP error! status: 400
+Coffs Harbour City Council: HTTP error! status: 400
+Coolamon Shire Council: HTTP error! status: 400
+Coonamble Shire Council: HTTP error! status: 400
+Cootamundra-Gundagai Regional Council: HTTP error! status: 400
+Cowra Shire Council: HTTP error! status: 400
+Cumberland Council: HTTP error! status: 400
+Dubbo Regional Council: HTTP error! status: 400
+Dungog Shire Council: HTTP error! status: 400
+Edward River Council: HTTP error! status: 400
+Eurobodalla Shire Council: HTTP error! status: 400
+Fairfield City Council: HTTP error! status: 400
+Federation Council: HTTP error! status: 400
+Forbes Shire Council: HTTP error! status: 400
+Georges River Council: HTTP error! status: 400
+Gilgandra Shire Council: HTTP error! status: 400
+Glen Innes Severn Shire Council: HTTP error! status: 400
+Goulburn Mulwaree Council: HTTP error! status: 400
+Greater Hume Shire Council: HTTP error! status: 400
+Griffith City Council: HTTP error! status: 400
+Gunnedah Shire Council: HTTP error! status: 400
+Gwydir Shire Council: HTTP error! status: 400
+Hawkesbury City Council: HTTP error! status: 400
+Hay Shire Council: HTTP error! status: 400
+Hilltops Council: HTTP error! status: 400
+Hornsby Shire Council: HTTP error! status: 400
+Hunter's Hill Council: HTTP error! status: 400
+Inner West Council: HTTP error! status: 400
+Inverell Shire Council: HTTP error! status: 400
+Junee Shire Council: HTTP error! status: 400
+Kempsey Shire Council: HTTP error! status: 400
+Kiama Municipal Council: HTTP error! status: 400
+Ku-ring-gai Council: HTTP error! status: 400
+Kyogle Council: HTTP error! status: 400
+Lachlan Shire Council: HTTP error! status: 400
+Lake Macquarie City Council: HTTP error! status: 400
+Lane Cove Municipal Council: HTTP error! status: 400
+Leeton Shire Council: HTTP error! status: 400
+Lismore City Council: HTTP error! status: 400
+Lithgow City Council: HTTP error! status: 400
+Liverpool City Council: HTTP error! status: 400
+Liverpool Plains Shire Council: HTTP error! status: 400
+Lockhart Shire Council: HTTP error! status: 400
+Maitland City Council: HTTP error! status: 400
+Mid-Coast Council: HTTP error! status: 400
+Mid-Western Regional Council: HTTP error! status: 400
+Moree Plains Shire Council: HTTP error! status: 400
+Mosman Municipal Council: HTTP error! status: 400
+Murray River Council: HTTP error! status: 400
+Murrumbidgee Council: HTTP error! status: 400
+Muswellbrook Shire Council: HTTP error! status: 400
+Nambucca Valley Council: HTTP error! status: 400
+Narrabri Shire Council: HTTP error! status: 400
+Narrandera Shire Council: HTTP error! status: 400
+Narromine Shire Council: HTTP error! status: 400
+Newcastle City Council: HTTP error! status: 400
+North Sydney Council: HTTP error! status: 400
+Northern Beaches Council: HTTP error! status: 400
+Oberon Council: HTTP error! status: 400
+Orange City Council: HTTP error! status: 400
+Parkes Shire Council: HTTP error! status: 400
+Penrith City Council: HTTP error! status: 400
+Port Macquarie-Hastings Council: HTTP error! status: 400
+Port Stephens Council: HTTP error! status: 400
+Queanbeyan-Palerang Regional Council: HTTP error! status: 400
+Randwick City Council: HTTP error! status: 400
+Richmond Valley Council: HTTP error! status: 400
+Ryde City Council: HTTP error! status: 400
+Shellharbour City Council: HTTP error! status: 400
+Shoalhaven City Council: HTTP error! status: 400
+Singleton Council: HTTP error! status: 400
+Snowy Monaro Regional Council: HTTP error! status: 400
+Snowy Valleys Council: HTTP error! status: 400
+Strathfield Municipal Council: HTTP error! status: 400
+Sutherland Shire Council: HTTP error! status: 400
+Tamworth Regional Council: HTTP error! status: 400
+Temora Shire Council: HTTP error! status: 400
+Eurobodalla Shire Council: terminated
