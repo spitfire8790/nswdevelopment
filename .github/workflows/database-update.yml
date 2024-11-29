@@ -31,4 +31,6 @@ jobs:
           echo "Testing Supabase connection..."
           echo "URL exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' }}"
           echo "Key exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' }}"
+          echo "URL length: ${#NEXT_PUBLIC_SUPABASE_URL}"
+          echo "Key length: ${#NEXT_PUBLIC_SUPABASE_ANON_KEY}"
           npm run update-db
