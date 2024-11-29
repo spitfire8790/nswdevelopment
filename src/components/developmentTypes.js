@@ -75,6 +75,8 @@ export const devTypesData = [
         { oldtype: 'Manor house', newtype: 'Manor house', secondary: '' },
         { oldtype: 'Medium Density Housing', newtype: 'Medium density', secondary: '' },
         { oldtype: 'Non-standard Housing', newtype: 'Non-standard', secondary: '' },
+        { oldtype: 'Residential Accommodation', newtype: 'Dwelling', secondary: '' },
+        { oldtype: 'Manor houses', newtype: 'Manor house', secondary: '' },
     ]
   },
   {
@@ -107,6 +109,11 @@ export const devTypesData = [
         { oldtype: 'Tank-based aquaculture', newtype: 'Aquaculture', secondary: '' },
         { oldtype: 'Turf farming', newtype: 'Turf farming', secondary: '' },
         { oldtype: 'Viticulture', newtype: 'Viticulture', secondary: '' },
+        { oldtype: 'Farm building', newtype: 'Farm', secondary: '' },
+        { oldtype: 'Farm buildings', newtype: 'Farm', secondary: '' },
+        { oldtype: 'Farm gate premise - Cellar door', newtype: 'Farm gate', secondary: '' },
+        { oldtype: 'Fowl and poultry houses', newtype: 'Poultry farm', secondary: '' },
+        { oldtype: 'Grain silos and grain bunkers', newtype: 'Agriculture', secondary: '' },
     ]
   },
   {
@@ -141,6 +148,8 @@ export const devTypesData = [
         { oldtype: 'Industrial retail outlet', newtype: 'Industrial retail', secondary: '' },
         { oldtype: 'Kiosk', newtype: 'Kiosk', secondary: '' },
         { oldtype: 'Landscaping material supply', newtype: 'Landscape supply', secondary: '' },
+        { oldtype: 'Wholesale supplies', newtype: 'Commercial', secondary: '' },
+        { oldtype: 'Retail premises ', newtype: 'Retail', secondary: '' },
     ]
   },
   {
@@ -155,6 +164,9 @@ export const devTypesData = [
         { oldtype: 'Artisan food and drink industry', newtype: 'Food and beverage', secondary: '' },
         { oldtype: 'Pub', newtype: 'Pub', secondary: '' },
         { oldtype: 'Small bar', newtype: 'Pub', secondary: '' },
+        { oldtype: 'Cellar door premise', newtype: 'Food and beverage', secondary: '' },
+        { oldtype: 'Outdoor dining - general', newtype: 'Food and beverage', secondary: '' },
+        { oldtype: 'Outdoor dining - registered club', newtype: 'Food and beverage', secondary: '' },
     ]   
   },
   {
@@ -169,6 +181,9 @@ export const devTypesData = [
         { oldtype: 'Early Education and Care Facility', newtype: 'Childcare', secondary: '' },
         { oldtype: 'School', newtype: 'School', secondary: '' },
         { oldtype: 'Out of school hours care', newtype: 'Out of school hours care', secondary: '' },  
+        { oldtype: 'Educational establishment ', newtype: 'Educational establishment', secondary: '' },
+        { oldtype: 'Home-based child care', newtype: 'Childcare', secondary: '' },
+        { oldtype: 'Tertiary institution', newtype: 'Educational establishment', secondary: '' },
     ]
   },
   {
@@ -180,7 +195,9 @@ export const devTypesData = [
         { oldtype: 'Health Infrastructure', newtype: 'Health Infrastructure', secondary: '' },
         { oldtype: 'Medical centre', newtype: 'Medical centre', secondary: '' },
         { oldtype: 'Hospital', newtype: 'Hospital', secondary: '' },
-        { oldtype: 'Community health service facility', newtype: 'Health services', secondary: '' },   
+        { oldtype: 'Community health service facility', newtype: 'Health services', secondary: '' }, 
+        { oldtype: 'Residential care facility', newtype: 'Residential care facility', secondary: '' },
+        { oldtype: 'Respite day care centre', newtype: 'Respite day care', secondary: '' },
     ]
   },
   {
@@ -209,6 +226,10 @@ export const devTypesData = [
         { oldtype: 'Backpackers\' accommodation', newtype: 'Backpackers', secondary: '' },
         { oldtype: 'Farm stay accommodation', newtype: 'Farm stay accommodation', secondary: '' },
         { oldtype: 'Eco-tourist facility', newtype: 'Eco-tourist facility', secondary: '' },
+        { oldtype: 'Backpackers\' accommodation', newtype: 'Backpackers', secondary: '' },
+        { oldtype: 'Camping ground', newtype: 'Tourist and visitor accommodation', secondary: '' },
+        { oldtype: 'Caravan park', newtype: 'Tourist and visitor accommodation', secondary: '' },
+        { oldtype: 'Hostel', newtype: 'Hostel', secondary: '' },
     ]
   },
   {
@@ -226,7 +247,11 @@ export const devTypesData = [
         { oldtype: 'Heavy Industrial Storage Establishment', newtype: 'Industrial storage', secondary: '' },
         { oldtype: 'Hazardous storage establishment', newtype: 'Hazardous storage', secondary: '' },
         { oldtype: 'Hazardous Industry', newtype: 'Hazardous industry', secondary: '' },
-        { oldtype: 'Offensive Industry', newtype: 'Hazardous industry', secondary: '' },   
+        { oldtype: 'Offensive Industry', newtype: 'Hazardous industry', secondary: '' },
+        { oldtype: 'Industrial training facility', newtype: 'Industrial', secondary: '' },
+        { oldtype: 'Potentially hazardous industry', newtype: 'Hazardous industry', secondary: '' },
+        { oldtype: 'Potentially offensive industry', newtype: 'Hazardous industry', secondary: '' },
+        { oldtype: 'Timber Yard', newtype: 'Timber yard', secondary: '' },
     ]
   },
   {
@@ -255,6 +280,9 @@ export const devTypesData = [
         { oldtype: 'Tourist road', newtype: 'Road infrastructure', secondary: '' },
         { oldtype: 'Freight support facility', newtype: 'Freight facility', secondary: '' },
         { oldtype: 'Freight transport facility', newtype: 'Freight facility', secondary: '' },
+        { oldtype: 'Airstrip', newtype: 'Air transport', secondary: '' },
+        { oldtype: 'Depot', newtype: 'Depot', secondary: '' },
+        { oldtype: 'Liquid fuel depot', newtype: 'Depot', secondary: '' },
     ]
   },
   {
@@ -268,9 +296,11 @@ export const devTypesData = [
         { oldtype: 'Mooring Pen', newtype: 'Mooring', secondary: '' },
         { oldtype: 'Mooring', newtype: 'Mooring', secondary: '' },
         { oldtype: 'Jetty', newtype: 'Jetty', secondary: '' },
-        { oldtype: 'Port wharf boating facilities', newtype: 'Boat facilities', secondary: '' },
+        { oldtype: 'Port, wharf, boating facilities', newtype: 'Boat facilities', secondary: '' },
         { oldtype: 'Wharf or boating facility', newtype: 'Boat facilities', secondary: '' },
         { oldtype: 'Sea walls or training walls', newtype: 'Sea walls', secondary: '' },
+        { oldtype: 'Waterbody', newtype: 'Water infrastructure', secondary: '' },
+        { oldtype: 'Waterway structures - minor alterations', newtype: '', secondary: 'X' },
     ]   
   },
   { 
@@ -311,6 +341,9 @@ export const devTypesData = [
         { oldtype: 'Waste or resource transfer station', newtype: 'Waste transfer', secondary: '' },
         { oldtype: 'Waste storage facility', newtype: 'Waste storage', secondary: '' },
         { oldtype: 'Water reticulation system', newtype: 'Water system', secondary: '' },
+        { oldtype: 'Stormwater management systems', newtype: 'Stormwater management', secondary: '' },
+        { oldtype: 'Waste and resource management facilities ', newtype: 'Waste management', secondary: '' },
+        { oldtype: 'Composting facilities and works', newtype: 'Waste management', secondary: '' },
     ]
   },
   {
@@ -398,6 +431,18 @@ export const devTypesData = [
         { oldtype: 'Sculptures and artworks', newtype: '', secondary: 'X' },
         { oldtype: 'Shade structures of canvas', newtype: '', secondary: 'X' },
         { oldtype: 'Skylights', newtype: '', secondary: 'X' },
+        { oldtype: 'Ancillary commercial development', newtype: '', secondary: 'X' },
+        { oldtype: 'Footpaths - outdoor dining', newtype: 'Food and beverage', secondary: '' },
+        { oldtype: 'Aerials, antennae and communication dishes', newtype: '', secondary: 'X' },
+        { oldtype: 'Awnings, blinds and canopies', newtype: '', secondary: 'X' },
+        { oldtype: 'Barbecues and other outdoor cooking structures', newtype: '', secondary: 'X' },
+        { oldtype: 'Bollards', newtype: '', secondary: 'X' },
+        { oldtype: 'Cabanas, cubby houses, ferneries, garden sheds, gazebos and greenhouses', newtype: '', secondary: 'X' },
+        { oldtype: 'Driveways and hard stand spaces', newtype: '', secondary: 'X' },
+        { oldtype: 'Pools / decks / fencing', newtype: '', secondary: 'X' },
+        { oldtype: 'Shade structures of canvas, fabric, mesh or the like', newtype: '', secondary: 'X' },
+        { oldtype: 'Skylights, roof windows and ventilators', newtype: '', secondary: 'X' },
+        { oldtype: 'Water features and ponds', newtype: '', secondary: 'X' },
     ]
   },
   {
@@ -420,7 +465,8 @@ export const devTypesData = [
         { oldtype: 'Entertainment associated with existing premises', newtype: '', secondary: 'X' },
         { oldtype: 'Emergency work and repairs', newtype: '', secondary: 'X' },
         { oldtype: 'Maintenance of buildings in draft heritage conservation areas', newtype: '', secondary: 'X' },
-        { oldtype: 'Temporary installation following natural disaster', newtype: '', secondary: 'X' } 
+        { oldtype: 'Temporary installation following natural disaster', newtype: '', secondary: 'X' },
+        { oldtype: "Aerials, antennae and communication dishes", newtype: '', secondary: 'X' } 
     ]
   },
   {

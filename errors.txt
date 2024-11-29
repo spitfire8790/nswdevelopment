@@ -1,107 +1,108 @@
-Albury City Council: HTTP error! status: 400
-Armidale Regional Council: HTTP error! status: 400
-Ballina Shire Council: HTTP error! status: 400
-Bathurst Regional Council: HTTP error! status: 400
-Bayside Council: HTTP error! status: 400
-Bega Valley Shire Council: HTTP error! status: 400
-Bellingen Shire Council: HTTP error! status: 400
-Berrigan Shire Council: HTTP error! status: 400
-Blacktown City Council: HTTP error! status: 400
-Bland Shire Council: HTTP error! status: 400
-Blayney Shire Council: HTTP error! status: 400
-Blue Mountains City Council: HTTP error! status: 400
-Bogan Shire Council: HTTP error! status: 400
-Bourke Shire Council: HTTP error! status: 400
-Brewarrina Shire Council: HTTP error! status: 400
-Broken Hill City Council: HTTP error! status: 400
-Burwood Council: HTTP error! status: 400
-Byron Shire Council: HTTP error! status: 400
-Cabonne Council: HTTP error! status: 400
-Camden Council: HTTP error! status: 400
-Campbelltown City Council: HTTP error! status: 400
-Canterbury-Bankstown Council: HTTP error! status: 400
-Central Coast Council: HTTP error! status: 400
-Central Darling Shire Council: HTTP error! status: 400
-Cessnock City Council: HTTP error! status: 400
-City of Canada Bay Council: HTTP error! status: 400
-City of Parramatta Council: HTTP error! status: 400
-City of Sydney: HTTP error! status: 400
-Clarence Valley Council: HTTP error! status: 400
-Cobar Shire Council: HTTP error! status: 400
-Coffs Harbour City Council: HTTP error! status: 400
-Coolamon Shire Council: HTTP error! status: 400
-Coonamble Shire Council: HTTP error! status: 400
-Cootamundra-Gundagai Regional Council: HTTP error! status: 400
-Cowra Shire Council: HTTP error! status: 400
-Cumberland Council: HTTP error! status: 400
-Dubbo Regional Council: HTTP error! status: 400
-Dungog Shire Council: HTTP error! status: 400
-Edward River Council: HTTP error! status: 400
-Eurobodalla Shire Council: HTTP error! status: 400
-Fairfield City Council: HTTP error! status: 400
-Federation Council: HTTP error! status: 400
-Forbes Shire Council: HTTP error! status: 400
-Georges River Council: HTTP error! status: 400
-Gilgandra Shire Council: HTTP error! status: 400
-Glen Innes Severn Shire Council: HTTP error! status: 400
-Goulburn Mulwaree Council: HTTP error! status: 400
-Greater Hume Shire Council: HTTP error! status: 400
-Griffith City Council: HTTP error! status: 400
-Gunnedah Shire Council: HTTP error! status: 400
-Gwydir Shire Council: HTTP error! status: 400
-Hawkesbury City Council: HTTP error! status: 400
-Hay Shire Council: HTTP error! status: 400
-Hilltops Council: HTTP error! status: 400
-Hornsby Shire Council: HTTP error! status: 400
-Hunter's Hill Council: HTTP error! status: 400
-Inner West Council: HTTP error! status: 400
-Inverell Shire Council: HTTP error! status: 400
-Junee Shire Council: HTTP error! status: 400
-Kempsey Shire Council: HTTP error! status: 400
-Kiama Municipal Council: HTTP error! status: 400
-Ku-ring-gai Council: HTTP error! status: 400
-Kyogle Council: HTTP error! status: 400
-Lachlan Shire Council: HTTP error! status: 400
-Lake Macquarie City Council: HTTP error! status: 400
-Lane Cove Municipal Council: HTTP error! status: 400
-Leeton Shire Council: HTTP error! status: 400
-Lismore City Council: HTTP error! status: 400
-Lithgow City Council: HTTP error! status: 400
-Liverpool City Council: HTTP error! status: 400
-Liverpool Plains Shire Council: HTTP error! status: 400
-Lockhart Shire Council: HTTP error! status: 400
-Maitland City Council: HTTP error! status: 400
-Mid-Coast Council: HTTP error! status: 400
-Mid-Western Regional Council: HTTP error! status: 400
-Moree Plains Shire Council: HTTP error! status: 400
-Mosman Municipal Council: HTTP error! status: 400
-Murray River Council: HTTP error! status: 400
-Murrumbidgee Council: HTTP error! status: 400
-Muswellbrook Shire Council: HTTP error! status: 400
-Nambucca Valley Council: HTTP error! status: 400
-Narrabri Shire Council: HTTP error! status: 400
-Narrandera Shire Council: HTTP error! status: 400
-Narromine Shire Council: HTTP error! status: 400
-Newcastle City Council: HTTP error! status: 400
-North Sydney Council: HTTP error! status: 400
-Northern Beaches Council: HTTP error! status: 400
-Oberon Council: HTTP error! status: 400
-Orange City Council: HTTP error! status: 400
-Parkes Shire Council: HTTP error! status: 400
-Penrith City Council: HTTP error! status: 400
-Port Macquarie-Hastings Council: HTTP error! status: 400
-Port Stephens Council: HTTP error! status: 400
-Queanbeyan-Palerang Regional Council: HTTP error! status: 400
-Randwick City Council: HTTP error! status: 400
-Richmond Valley Council: HTTP error! status: 400
-Ryde City Council: HTTP error! status: 400
-Shellharbour City Council: HTTP error! status: 400
-Shoalhaven City Council: HTTP error! status: 400
-Singleton Council: HTTP error! status: 400
-Snowy Monaro Regional Council: HTTP error! status: 400
-Snowy Valleys Council: HTTP error! status: 400
-Strathfield Municipal Council: HTTP error! status: 400
-Sutherland Shire Council: HTTP error! status: 400
-Tamworth Regional Council: HTTP error! status: 400
-Temora Shire Council: HTTP error! status: 400
-Eurobodalla Shire Council: terminated
+Albury City Council: Could not find the 'ModificationApplicationNumber' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'ModificationApplicationNumber' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'BuildingHeight' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Ballina Shire Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Ballina Shire Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Bathurst Regional Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Bayside Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Bega Valley Shire Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Bellingen Shire Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Berrigan Shire Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Blacktown City Council: Could not find the 'AccompaniedByVPAFlag' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'application_status' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'application_status' column of 'development_applications' in the schema cache
+Albury City Council: null value in column "modificationapplicationnumber" of relation "development_applications" violates not-null constraint
+Albury City Council: null value in column "determinationdate" of relation "development_applications" violates not-null constraint
+Albury City Council: null value in column "determinationdate" of relation "development_applications" violates not-null constraint
+Armidale Regional Council: null value in column "determinationdate" of relation "development_applications" violates not-null constraint
+Ballina Shire Council: null value in column "costofdevelopment" of relation "development_applications" violates not-null constraint
+Bathurst Regional Council: null value in column "costofdevelopment" of relation "development_applications" violates not-null constraint
+Bayside Council: null value in column "determinationdate" of relation "development_applications" violates not-null constraint
+Bega Valley Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Bellingen Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Berrigan Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Blacktown City Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Albury City Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Bland Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Armidale Regional Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Ballina Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Blayney Shire Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Bathurst Regional Council: Could not find the 'accompanied_by_vpa_flag' column of 'development_applications' in the schema cache
+Blue Mountains City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bayside Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bogan Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bega Valley Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bourke Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bellingen Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Brewarrina Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Berrigan Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Broken Hill City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Blacktown City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Burwood Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Bland Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Byron Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Camden Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Campbelltown City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Canterbury-Bankstown Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Central Coast Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Central Darling Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cessnock City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+City of Canada Bay Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+City of Parramatta Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Clarence Valley Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cobar Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Coffs Harbour City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Coolamon Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Coonamble Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cootamundra-Gundagai Regional Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cowra Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cumberland Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Dubbo Regional Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Dungog Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Edward River Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Eurobodalla Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Fairfield City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Federation Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Forbes Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Georges River Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Gilgandra Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Glen Innes Severn Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Goulburn Mulwaree Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Greater Hume Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Griffith City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Gunnedah Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Gwydir Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Hawkesbury City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Hay Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Hilltops Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Inner West Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Inverell Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Junee Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Kempsey Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Canterbury-Bankstown Council: terminated
+Ku-ring-gai Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Kyogle Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Lachlan Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Central Coast Council: terminated
+Lake Macquarie City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Lane Cove Municipal Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Leeton Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Lismore City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Lithgow City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Liverpool City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Liverpool Plains Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+Cabonne Council: fetch failed
+City of Parramatta Council: fetch failed
+Lockhart Shire Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache
+City of Sydney: fetch failed
+Maitland City Council: Could not find the 'applicationstatus' column of 'development_applications' in the schema cache

@@ -56,8 +56,8 @@
 }
 
 .leaflet-popup-content {
-  margin: 8px 12px;
-  min-width: 200px;
+  margin: 0 !important;
+  width: auto !important;
 }
 
 .leaflet-popup-content p {
@@ -120,4 +120,8 @@
 .leaflet-container a.leaflet-popup-close-button {
   top: 8px !important;
   right: 8px !important;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
 }

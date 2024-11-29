@@ -1,0 +1,914 @@
+DA Open APIs
+Department of Planning, Industry and Environment
+
+1. Abstract
+This Online DA Service API provides outbound connection from the New South Wales
+ePlanning Datawarehouse to access a public dataset of all DA applications lodged since 1012-2018
+
+2. Filters
+Filter
+
+*Array
+
+Example
+
+Comments
+
+CouncilName
+
+Y
+
+{ "filters": { "CouncilName": ["ALBURY
+CITY COUNCIL", "PENRITH CITY
+COUNCIL"] } }
+
+Council Names as per
+appendix1
+
+ApplicationType
+
+Y
+
+{ "filters": { "ApplicationType": "Develop
+ment Application" } }
+
+-
+
+DevelopmentCategory
+
+Y
+
+{ "filters": { "DevelopmentCategory": ["R
+esidential", "Industrial"], "CouncilName"
+: ["ALBURY CITY COUNCIL", "PENRIT
+H CITY COUNCIL"] } }
+
+ApplicationStatus
+
+Y
+
+{ "filters": { "ApplicationStatus": ["Under
+Assessment"], "CouncilName": ["ALBU
+RY CITY COUNCIL", "PENRITH CITY
+COUNCIL"] } }
+
+CostOfDevelopmentFrom
+
+N
+
+{ "filters": { "CostOfDevelopmentFrom":
+1000000000, "CostOfDevelopmentTo":
+20000000000 } }
+
+CostOfDevelopmentTo
+
+N
+
+{ "filters": { "CostOfDevelopmentFrom":
+1000000000, "CostOfDevelopmentTo":
+20000000000 } }
+
+Development Category’s
+•
+
+Industrial,
+
+•
+
+Commercial,
+
+•
+
+Recreational,
+
+•
+•
+
+Residential,
+Other
+
+Application Status available
+•
+
+Additional Information
+Requested,
+
+•
+
+Determined,
+
+•
+
+Pending lodgement,
+
+•
+
+Rejected,
+
+•
+
+Pending Court Appeal,
+
+•
+
+Under Assessment,
+
+•
+
+Withdrawn,
+
+•
+
+Deferred Commencement,
+
+•
+
+On Exhibition
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 1
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+LodgementDateFrom
+
+N
+
+{ "filters": { "LodgementDateFrom": "202
+1-02-01", "LodgementDateTo": "202102-02" } }
+
+All Applications Lodged on or
+after date
+
+LodgementDateTo
+
+N
+
+{ "filters": { "LodgementDateTo": "202102-01" } }
+
+All Applications Lodged on or
+before date
+
+SubmissionDateFrom
+
+N
+
+SubmissionDateTo
+
+N
+
+DeterminationDateFrom
+
+N
+
+All applications Determinated on
+or after date
+
+DeterminationDateTo
+
+N
+
+All applications Determinated on
+or before dare
+
+PlanningPortalApplicationN
+umber
+
+Y
+
+CouncilApplicationNumber
+
+Y
+
+ApplicationLastUpdatedFro
+m
+
+N
+
+All Applications Last Update on
+or before date
+
+ApplicationLastUpdatedTo
+
+N
+
+All Applications Last Update on
+or before date
+
+All Applications Submission on
+or after date
+{ "filters": { "SubmissionDateTo": "202102-01" } }
+
+All applications Submission on
+or before date
+
+{ "filters": { "
+PlanningPortalApplicationNumber
+": "PAN-999", “PAN-1001” } }
+
+Array * : accepts multiple values
+
+3. Data Set Metadata
+Field Name
+
+Description
+
+Field Type
+
+M/O/CM*
+
+Comments
+
+PlanningPortalApplica
+tionNumber
+
+PAN Number
+
+Text - Max
+length:100
+
+M
+
+ApplicationType
+
+What is the application type?
+
+Text -Max
+length:100
+
+M
+
+Available values are
+1. Development application
+2. Modification application
+3. Review of determination
+
+ApplicationStatus
+
+What is the Application
+Status?
+
+Text - Max
+length:50
+
+M
+
+Available values are:
+•
+
+Additional
+Information
+Requested,
+
+•
+
+Determined,
+
+•
+
+Pending lodgement,
+
+•
+
+Rejected,
+
+•
+
+Pending Court Appeal,
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 2
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+•
+
+Under Assessment,
+
+•
+
+Withdrawn,
+
+•
+
+Deferred
+Commencement,
+
+•
+
+On Exhibition
+
+ModificationApplicatio
+nNumber
+
+What is the Development
+Application number of the
+consent to be modified?
+
+Text-Max
+length:100
+
+M
+
+FullAddress
+
+Development Street address
+
+Text -Max
+length:200
+
+M
+
+CouncilName
+
+CouncilName
+
+Text -Max
+length:100
+
+M
+
+DevelopmentType
+
+What type of development
+are you proposing?
+
+Text -Max
+length:100
+
+M
+
+NumberOfNewDwelli
+ngs
+
+Number of dwellings / units
+proposed
+
+Integer
+
+M
+
+NumberOfStoreys
+
+Number of storeys proposed
+
+Integer
+
+O
+
+NumberOfExistingLot
+s
+
+Number of existing lots
+
+Integer
+
+O
+
+SubdivisionProposed
+Flag
+
+Is subdivision proposed?
+
+Text -Max
+length:1
+
+M
+
+Y= Yes
+N= No
+
+SubdivisionType
+
+Please indicate the type of
+subdivision proposed
+
+Text -Max
+length:50
+
+M
+
+If 'Is subdivision proposed?'
+= 'Y'
+Available values are
+1. Strata Title
+2. Community Title
+3. Torrens Title
+4. Stratum Title
+
+NumberOfProposedL
+ots
+
+Number of proposed lots
+
+Integer
+
+O
+
+If 'Is subdivision proposed?'
+= 'Y'
+
+EPIVariationPropose
+dFlag
+
+Does the application propose
+a variation to a development
+standard in an environmental
+planning instrument (eg LEP
+or SEPP)?
+
+Text -Max
+length:1
+
+O
+
+Y= Yes
+N= No
+
+Applicable If value for "What
+is the application type" =
+"Modification Application"
+
+Multiple values available
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 3
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+AccompaniedByVPA
+Flag
+
+Is the application
+accompanied by a voluntary
+planning agreement (VPA)?
+
+Text -Max
+length:1
+
+O
+
+Y= Yes
+N= No
+
+VPAStatus
+
+Status
+
+Text -Max
+length:100
+
+CM
+
+If "Is the application
+accompanied by a voluntary
+planning agreement (VPA)?"
+= "Y"
+Options are:
+1. Proposed
+2. On exhibition
+3. Executed
+
+LodgementDate
+
+M
+
+The date the application
+was lodged into the
+Council system
+
+Date
+
+DeterminationAuthority
+
+The anticipated
+determination
+body
+
+Text -Max
+length:50
+
+M
+
+Available options are
+1. Council
+2. Sydney / Regional
+Planning Panel
+3. Local Planning Panel
+4. Central Sydney Planning
+Committee
+
+AssessmentExhibition
+StartDate
+
+Exhibition start of period
+
+Date
+
+CM
+
+Format : DD / MM /YYYY
+
+AssessmentExhibition
+EndDate
+
+Exhibition end of period
+
+Date
+
+CM
+
+Format :DD / MM /YYYY
+
+DevelopmentSubject
+ToSICFlag
+
+Is the development
+subject to Special
+Infrastructure
+Contributions (SIC)?
+
+Text
+Max length:1
+
+M
+
+Y= Yes
+N= No
+
+VariationToDevelopm
+entStandardsApprove
+dFlag
+
+Was a variation to
+development
+standards approved?
+
+Text
+Max length:1
+
+M
+
+Y= Yes
+N= No
+
+DeterminationDate
+
+Date of determination
+
+Date
+
+M
+
+Format : DD / MM /YYYY
+
+CostofDevelopment
+
+Estimated cost of
+the development*
+
+Number
+
+M
+
+Format to be
+DD / MM /YYYY
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 4
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+Postcode
+
+Post Code
+
+Text-Max
+length:08
+
+O
+
+State
+
+State Name
+
+Text-Max
+length:60
+
+O
+
+StreetName
+
+Street Name
+
+Text-Max
+length:60
+
+O
+
+StreetNumber1
+
+Street Number line
+1
+
+Text-Max
+length:60
+
+O
+
+StreetNumber2
+
+Street Number line
+2
+
+Text-Max
+length:60
+
+O
+
+StreetSuffix
+
+Street Suffix
+
+Text-Max
+length:60
+
+O
+
+StreetType
+
+Type of Street
+
+Text-Max
+length:60
+
+O
+
+Suburb
+
+Suburb Name
+
+Text-Max
+length:60
+
+O
+
+X
+
+X-Axis
+
+Number
+
+O
+
+Y
+
+Y-Axis
+
+Number
+
+O
+
+Lot
+
+Lot Information/
+Number
+
+Text-Max
+length:30
+
+O
+
+PlanLabel
+
+Plan Label
+Information
+
+Text-Max
+length:30
+
+O
+
+Section
+
+Section Details/
+Information
+
+Text-Max
+length:30
+
+O
+
+SubdivisionType
+
+Type of
+Subdivision
+
+Text-Max
+length:50
+
+M
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+*M/O/CM : M: Mandatory / O: Optional / CM: Conditional Mandatory
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 5
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+4. Dataset reference date
+DAs are available from 10-12-2018
+
+5. Maintenance and update frequency
+Data are updated Daily
+
+6. Contact info
+Organisation name Department of Planning, Industry and Environment
+Postal address Locked Bag 5022
+Parramatta NSW 2124
+Australia
+Phone number 1300 305 695
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 6
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+7. Appendix 1
+Council Name list:
+Parameter: CouncilName
+Albury City Council
+Armidale Regional Council
+Ballina Shire Council
+Balranald Shire Council
+Bathurst Regional Council
+Bayside Council
+Bega Valley Shire Council
+Bellingen Shire Council
+Berrigan Shire Council
+Blacktown City Council
+Bland Shire Council
+Blayney Shire Council
+Blue Mountains City Council
+Bogan Shire Council
+Bourke Shire Council
+Brewarrina Shire Council
+Broken Hill City Council
+Burwood Council
+Byron Shire Council
+Cabonne Shire Council
+Camden Council
+Campbelltown City Council
+Canterbury-Bankstown Council
+Carrathool Shire Council
+Central Coast Council
+Central Darling Shire Council
+Cessnock City Council
+City of Canada Bay Council
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 7
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+City of Parramatta Council
+Clarence Valley Council
+Cobar Shire Council
+Coffs Harbour City Council
+Coolamon Shire Council
+Coonamble Shire Council
+Cootamundra-Gundagai Regional Council
+Council of the City of Sydney
+Cowra Shire Council
+Cumberland Council
+Dubbo Regional Council
+Dungog Shire Council
+Edward River Council
+Eurobodalla Shire Council
+Fairfield City Council
+Federation Council
+Forbes Shire Council
+Georges River Council
+Gilgandra Shire Council
+Glen Innes Severn Shire Council
+Goulburn Mulwaree Council
+Greater Hume Shire Council
+Griffith City Council
+Gunnedah Shire Council
+Gwydir Shire Council
+Hawkesbury City Council
+Hay Shire Council
+Hilltops Council
+Inner West Council
+Inverell Shire Council
+Junee Shire Council
+Kempsey Shire Council
+Ku-ring-gai Council
+Kyogle Council
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 8
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+Lachlan Shire Council
+Lake Macquarie City Council
+Lane Cove Municipal Council
+Leeton Shire Council
+Lismore City Council
+Lithgow City Council
+Liverpool City Council
+Liverpool Plains Shire Council
+Lockhart Shire Council
+Maitland City Council
+Mid-Coast Council
+Mid-Western Regional Council
+Moree Plains Shire Council
+Mosman Municipal Council
+Murray River Council
+Murrumbidgee Council
+Muswellbrook Shire Council
+Nambucca Valley Council
+Narrabri Shire Council
+Narrandera Shire Council
+Narromine Shire Council
+Newcastle City Council
+North Sydney Council
+Northern Beaches Council
+Oberon Council
+Orange City Council
+Parkes Shire Council
+Penrith City Council
+Port Macquarie-Hastings Council
+Port Stephens Council
+Queanbeyan-Palerang Regional Council
+Randwick City Council
+Richmond Valley Council
+Ryde City Council
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 9
+
+DA Open APIs
+Department of Planning, Industry and Environment
+
+Shellharbour City Council
+Shoalhaven City Council
+Singleton Council
+Snowy Monaro Regional Council
+Snowy Valleys Council
+Strathfield Municipal Council
+Sutherland Shire Council
+Tamworth Regional Council
+Temora Shire Council
+Tenterfield Shire Council
+The Council of the Municipality of Hunters Hill
+The Council of the Municipality of Kiama
+The Council of the Shire of Hornsby
+The Hills Shire Council
+Tweed Shire Council
+Upper Hunter Shire Council
+Upper Lachlan Shire Council
+Uralla Shire Council
+Wagga Wagga City Council
+Walcha Council
+Walgett Shire Council
+Warren Shire Council
+Warrumbungle Shire Council
+Waverley Council
+Weddin Shire Council
+Wentworth Shire Council
+Willoughby City Council
+Wingecarribee Shire Council
+Wollondilly Shire Council
+Wollongong City Council
+Woollahra Municipal Council
+Yass Valley Council
+
+NSW Department of Planning, Industry and Environment | DA Industry APIs | 10
+
+

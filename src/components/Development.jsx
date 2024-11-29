@@ -43,7 +43,7 @@ import {
   ChevronRight,
   LayoutDashboard
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { format } from "date-fns";
 import { ComposedChart, Line, Scatter } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -267,7 +267,6 @@ const Development = () => {
     development: 200,
     status: 150,
     lodged: 120,
-    days: 80,
     cost: 120
   });
 
@@ -400,7 +399,7 @@ const Development = () => {
   const chartData = useMemo(() => {
     if (!searchResults) return { 
       byType: [], 
-      totalValue: [], 
+      totalValue: 0, 
       averageCost: [], 
       averageDays: [], 
       costPerDwelling: [] 
@@ -408,12 +407,19 @@ const Development = () => {
 
     const uniqueResults = processResults(searchResults);
     
-    // First aggregate all data as before
-    const detailedData = uniqueResults.reduce((acc, curr) => {
-      const type = cleanDevelopmentType(curr.DevelopmentType);
-      if (!acc[type]) {
-        acc[type] = {
-          name: type,
+    // Initialize category aggregation objects
+    const byCategory = {};
+    const totalValueByCategory = {};
+    const averageCostByCategory = {};
+    const averageDaysByCategory = {};
+
+    uniqueResults.forEach(result => {
+      const category = getDevelopmentCategory(cleanDevelopmentType(result.DevelopmentType));
+      
+      // Initialize category objects if they don't exist
+      if (!byCategory[category]) {
+        byCategory[category] = {
+          name: category,
           underAssessment: 0,
           determined: 0,
           onExhibition: 0,
@@ -422,105 +428,134 @@ const Development = () => {
           rejected: 0,
           pendingCourtAppeal: 0,
           withdrawn: 0,
-          deferredCommencement: 0,
+          deferredCommencement: 0
+        };
+        
+        totalValueByCategory[category] = {
+          name: category,
+          value: 0
+        };
+        
+        averageCostByCategory[category] = {
+          name: category,
           totalCost: 0,
-          count: 0,
-          determinedCount: 0,
-          determinedDays: 0
+          count: 0
+        };
+        
+        averageDaysByCategory[category] = {
+          name: category,
+          totalDays: 0,
+          determinedCount: 0
         };
       }
 
-      // Update counts based on status
-      const status = curr.ApplicationStatus?.toLowerCase().replace(/\s+/g, '');
+      // Update application status counts
+      const status = result.ApplicationStatus?.toLowerCase().replace(/\s+/g, '');
       if (status) {
         switch(status) {
-          case 'underassessment': acc[type].underAssessment++; break;
-          case 'determined': acc[type].determined++; break;
-          case 'onexhibition': acc[type].onExhibition++; break;
-          case 'additionalinformationrequested': acc[type].additionalInfoRequested++; break;
-          case 'pendinglodgement': acc[type].pendingLodgement++; break;
-          case 'rejected': acc[type].rejected++; break;
-          case 'pendingcourtappeal': acc[type].pendingCourtAppeal++; break;
-          case 'withdrawn': acc[type].withdrawn++; break;
-          case 'deferredcommencement': acc[type].deferredCommencement++; break;
+          case 'underassessment': byCategory[category].underAssessment++; break;
+          case 'determined': byCategory[category].determined++; break;
+          case 'onexhibition': byCategory[category].onExhibition++; break;
+          case 'additionalinformationrequested': byCategory[category].additionalInfoRequested++; break;
+          case 'pendinglodgement': byCategory[category].pendingLodgement++; break;
+          case 'rejected': byCategory[category].rejected++; break;
+          case 'pendingcourtappeal': byCategory[category].pendingCourtAppeal++; break;
+          case 'withdrawn': byCategory[category].withdrawn++; break;
+          case 'deferredcommencement': byCategory[category].deferredCommencement++; break;
         }
       }
-  
-      // Update value tracking
-      acc[type].totalCost += curr.CostOfDevelopment || 0;
-      acc[type].count++;
-  
-      // Only track days for determined applications
-      if (curr.ApplicationStatus === 'Determined' && curr.DeterminationDate) {
-        acc[type].determinedCount++;
-        acc[type].determinedDays += Math.floor(
-          (new Date(curr.DeterminationDate) - new Date(curr.LodgementDate)) / (1000 * 60 * 60 * 24)
-        );
+
+      // Update total value
+      if (result.CostOfDevelopment) {
+        totalValueByCategory[category].value += result.CostOfDevelopment;
       }
-  
-      return acc;
-    }, {});
-  
-    // Calculate total value across all types
-    const totalValueSum = Object.values(detailedData)
-      .reduce((sum, data) => sum + data.totalCost, 0) / 1000000; // Convert to millions
-  
-    // Convert aggregated data into chart formats
-    const totalValue = Object.entries(detailedData)
-      .map(([type, data]) => ({
-        name: type,
-        value: data.totalCost / 1000000 // Convert to millions
-      }))
-      .sort((a, b) => b.value - a.value); // Sort by value descending
-  
-    const averageDays = Object.entries(detailedData)
-      .filter(([_, data]) => data.determinedCount > 0) // Only include types with determined applications
-      .map(([type, data]) => ({
-        name: type,
-        value: Math.round(data.determinedDays / data.determinedCount)
-      }))
-      .sort((a, b) => b.value - a.value); // Sort by value descending
-  
-    // Process dwelling data for average cost per dwelling
-    const dwellingData = uniqueResults.reduce((acc, curr) => {
+
+      // Update average cost
+      if (result.CostOfDevelopment) {
+        averageCostByCategory[category].totalCost += result.CostOfDevelopment;
+        averageCostByCategory[category].count++;
+      }
+
+      // Update average days
+      if (result.DeterminationDate && result.LodgementDate) {
+        const start = new Date(result.LodgementDate);
+        const end = new Date(result.DeterminationDate);
+        const days = Math.abs(end - start) / (1000 * 60 * 60 * 24);
+        averageDaysByCategory[category].totalDays += days;
+        averageDaysByCategory[category].determinedCount++;
+      }
+    });
+
+    // In the chartData calculation, update the costPerDwelling calculation:
+    const MIN_COST_THRESHOLD = 50000; // $50,000 minimum threshold
+
+    const costPerDwelling = uniqueResults.reduce((acc, curr) => {
+      // Check for valid cost and dwelling numbers, and ensure cost is above threshold
       if (curr.NumberOfNewDwellings > 0 && 
-          curr.CostOfDevelopment > 0 && 
+          curr.CostOfDevelopment > MIN_COST_THRESHOLD && 
           curr.DevelopmentType?.some(dt => isResidentialType(dt.DevelopmentType))) {
         
-        const type = cleanDevelopmentType(curr.DevelopmentType);
+        const newType = typeMap.get(cleanDevelopmentType(curr.DevelopmentType))?.newtype;
+        if (!newType) return acc;
         
-        if (!acc[type]) {
-          acc[type] = {
-            name: type,
+        if (!acc[newType]) {
+          acc[newType] = {
+            name: newType,
             totalCost: 0,
-            dwellingCount: 0
+            dwellingCount: 0,
+            developments: 0 // Track number of developments for better averaging
           };
         }
         
-        acc[type].totalCost += curr.CostOfDevelopment;
-        acc[type].dwellingCount += curr.NumberOfNewDwellings;
+        // Calculate cost per dwelling for this development
+        const costPerDwelling = curr.CostOfDevelopment / curr.NumberOfNewDwellings;
+        
+        // Only include if the cost per dwelling is above threshold
+        if (costPerDwelling > MIN_COST_THRESHOLD) {
+          acc[newType].totalCost += curr.CostOfDevelopment;
+          acc[newType].dwellingCount += curr.NumberOfNewDwellings;
+          acc[newType].developments++;
+        }
       }
       return acc;
     }, {});
-  
-    const costPerDwelling = Object.entries(dwellingData)
-      .map(([type, data]) => ({
-        name: type,
-        value: (data.totalCost / data.dwellingCount) / 1000000 // Convert to millions
-      }))
-      .filter(item => dwellingData[item.name].dwellingCount >= 3) // Only show types with at least 3 developments
-      .sort((a, b) => b.value - a.value);
-  
+
+    // Calculate final values and convert costs to millions
+    const totalValue = Object.values(totalValueByCategory)
+      .reduce((acc, curr) => acc + curr.value, 0) / 1000000;
+
     return {
-      byType: Object.values(detailedData),
+      byType: Object.values(byCategory),
       totalValue,
-      totalValueSum: totalValueSum.toFixed(1),
-      averageCost: Object.entries(detailedData).map(([type, data]) => ({
-        name: type,
-        value: (data.totalCost / data.count) / 1000000
-      })),
-      averageDays,
-      costPerDwelling
+      totalValueByCategory: Object.values(totalValueByCategory)
+        .map(category => ({
+          name: category.name,
+          value: category.value / 1000000
+        }))
+        .sort((a, b) => b.value - a.value),
+      averageCost: Object.values(averageCostByCategory)
+        .map(category => ({
+          name: category.name,
+          value: category.count > 0 ? (category.totalCost / category.count) / 1000000 : 0
+        }))
+        .sort((a, b) => b.value - a.value),
+      averageDays: Object.values(averageDaysByCategory)
+        .map(category => ({
+          name: category.name,
+          value: category.determinedCount > 0 ? 
+            Math.round(category.totalDays / category.determinedCount) : 
+            0
+        }))
+        .filter(category => category.value > 0) // Only show categories with determined applications
+        .sort((a, b) => b.value - a.value),
+      costPerDwelling: Object.values(costPerDwelling)
+        .map(type => ({
+          name: type.name,
+          value: type.totalCost / type.dwellingCount / 1000000,
+          developments: type.developments // Include count for tooltip
+        }))
+        .filter(type => type.value > 0.05) // Filter out any remaining small values
+        .sort((a, b) => b.value - a.value)
     };
   }, [searchResults]);
 
@@ -1018,6 +1053,15 @@ const fetchCouncilBoundary = async (councilName) => {
     );
   };
 
+  // Add this helper function to calculate days between dates
+  const calculateDaysBetweenDates = (startDate, endDate) => {
+    if (!startDate || !endDate) return null;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -1436,7 +1480,7 @@ const fetchCouncilBoundary = async (councilName) => {
                             top: 20,
                             right: 30,
                             left: 20,
-                            bottom: 80
+                            bottom: 50
                           }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -1444,20 +1488,32 @@ const fetchCouncilBoundary = async (councilName) => {
                             dataKey="name" 
                             angle={-45} 
                             textAnchor="end" 
-                            height={80}
+                            height={100} 
                             interval={0}
-                            tick={{ fontSize: 14 }}
-                            tickFormatter={(value) => {
-                              return value.length > 40 ? value.substring(0, 20) + '...' : value;
-                            }}
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
                           />
                           <YAxis />
                           <Tooltip />
                           <Bar 
                             name="Total Applications" 
-                            dataKey="total" 
-                            fill="#4F46E5"  // You can change this color as needed
-                          />
+                            dataKey="total"
+                          >
+                            {/* Map the colors based on the name in the sorted data */}
+                            {chartData.byType.map(item => ({
+                              name: item.name,
+                              total: item.underAssessment + item.determined + item.onExhibition + 
+                                     item.additionalInfoRequested + item.pendingLodgement + item.rejected + 
+                                     item.pendingCourtAppeal + item.withdrawn + item.deferredCommencement
+                            }))
+                            .sort((a, b) => b.total - a.total)
+                            .map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={developmentCategories[entry.name]?.color || '#4F46E5'} 
+                              />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1465,20 +1521,33 @@ const fetchCouncilBoundary = async (councilName) => {
 
                   <Card className="p-4 mt-6">
                     <h3 className="text-lg font-semibold mb-4">
-                      Total Value by Development Type - Total ${chartData.totalValueSum} million
+                      Total Value by Development Type - Total ${chartData.totalValue.toFixed(1)} million
                     </h3>
                     <div className="h-[400px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData.totalValue}
+                        <BarChart data={chartData.totalValueByCategory}
                         margin={{ top: 20, right: 30, left: 20, bottom: 50 }} 
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
-    return value.length > 25 ? value.substring(0, 20) + '...' : value;
-  }} />
+                          <XAxis 
+                            dataKey="name" 
+                            angle={-45} 
+                            textAnchor="end" 
+                            height={100} 
+                            interval={0} 
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
+                          />
                           <YAxis />
                           <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                            <Bar dataKey="value" fill="#60a5fa" />
+                            <Bar dataKey="value">
+                              {chartData.totalValueByCategory.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={developmentCategories[entry.name]?.color || '#4F46E5'} 
+                                />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1489,15 +1558,28 @@ const fetchCouncilBoundary = async (councilName) => {
                       <div className="w-full">
                         <ResponsiveContainer width="100%" height={400}>
                           <BarChart data={chartData.averageCost}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 50 }}                      
+                            margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
-    return value.length > 25 ? value.substring(0, 20) + '...' : value;
-  }} />
+                            <XAxis 
+                              dataKey="name" 
+                              angle={-45} 
+                              textAnchor="end" 
+                              height={100} 
+                              interval={0} 
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
+                            />
                             <YAxis />
                             <Tooltip formatter={(value) => `$${value.toFixed(1)}M`} />
-                            <Bar dataKey="value" fill="#34d399" />
+                            <Bar dataKey="value">
+                              {chartData.averageCost.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={developmentCategories[entry.name]?.color || '#4F46E5'} 
+                                />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1510,15 +1592,28 @@ const fetchCouncilBoundary = async (councilName) => {
                       <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData.averageDays}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 50 }}  
+                          margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
-    return value.length > 25 ? value.substring(0, 20) + '...' : value;
-  }}  />
+                            <XAxis 
+                              dataKey="name" 
+                              angle={-45} 
+                              textAnchor="end" 
+                              height={100} 
+                              interval={0} 
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
+                            />
                             <YAxis />
-                            <Tooltip formatter={(value) => `${value} days`} />
-                            <Bar dataKey="value" fill="#f472b6" />
+                            <Tooltip formatter={(value) => `${Math.round(value)} days`} />
+                            <Bar dataKey="value">
+                              {chartData.averageDays.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={developmentCategories[entry.name]?.color || '#4F46E5'} 
+                                />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1535,18 +1630,35 @@ const fetchCouncilBoundary = async (councilName) => {
                             margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 14 }} tickFormatter={(value) => {
-    return value.length > 25 ? value.substring(0, 20) + '...' : value;
-  }}
+                            <XAxis 
+                              dataKey="name" 
+                              angle={-45} 
+                              textAnchor="end" 
+                              height={100} 
+                              interval={0} 
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => value.length > 25 ? value.substring(0, 25) + '...' : value}
                             />
                             <YAxis 
                               tickFormatter={(value) => `$${value.toFixed(1)}M`}
                             />
                             <Tooltip 
-                              formatter={(value) => `$${value.toFixed(1)}M`}
-                              labelFormatter={(label) => `Development Type: ${label}`}
+                              formatter={(value, name, props) => [
+                                `$${value.toFixed(1)}M per dwelling`,
+                                `Development Type: ${props.payload.name} (${props.payload.developments} developments)`
+                              ]}
                             />
-                            <Bar dataKey="value" fill="#60a5fa" />
+                            <Bar dataKey="value">
+                              {chartData.costPerDwelling.map((entry, index) => {
+                                const category = getDevelopmentCategory(entry.name);
+                                return (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={developmentCategories[category]?.color || '#4F46E5'} 
+                                  />
+                                );
+                              })}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1601,12 +1713,6 @@ const fetchCouncilBoundary = async (councilName) => {
                                   Lodged
                                 </ResizableColumn>
                                 <ResizableColumn 
-                                  width={columnWidths.days}
-                                  onResize={(width) => handleResize('days', width)}
-                                >
-                                  <div className="text-center">Days</div>
-                                </ResizableColumn>
-                                <ResizableColumn 
                                   width={columnWidths.cost}
                                   onResize={(width) => handleResize('cost', width)}
                                 >
@@ -1644,9 +1750,6 @@ const fetchCouncilBoundary = async (councilName) => {
                                   </td>
                                   <td style={{ width: columnWidths.lodged }} className="px-2 py-2 text-gray-900 whitespace-nowrap text-xs">
                                     {format(new Date(result.LodgementDate), 'dd MMM yyyy')}
-                                  </td>
-                                  <td style={{ width: columnWidths.days }} className="px-2 py-2 text-gray-900 text-center text-xs">
-                                    {Math.floor((new Date(result.DeterminationDate || new Date()) - new Date(result.LodgementDate)) / (1000 * 60 * 60 * 24))}
                                   </td>
                                   <td style={{ width: columnWidths.cost }} className="px-2 py-2 text-gray-900 text-right text-xs">
                                     ${result.CostOfDevelopment?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -1745,78 +1848,43 @@ const fetchCouncilBoundary = async (councilName) => {
                         autoPan={true}
                       >
                         <div 
-                          className="custom-popup-content border-2 rounded-lg p-3 min-w-[400px] relative"
-                          style={{ borderColor: color }}
+                          className="custom-popup-content border-2 rounded-lg p-3 bg-white"
+                          style={{ 
+                            borderColor: color,
+                            width: 'auto',
+                            minWidth: '400px',
+                            maxWidth: '600px'
+                          }}
                         >
                           <div className="text-sm">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Icon className="w-5 h-5" style={{ color }} />
-                              <span className="font-semibold text-base">{result.Location?.[0]?.FullAddress}</span>
+                            <div className="font-semibold text-base mb-3 border-b pb-2">
+                              {result.Location?.[0]?.FullAddress}
                             </div>
-                            <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-                              <span className="text-gray-600 whitespace-nowrap">Application Number:</span>
+                            
+                            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2">
+                              <span className="text-gray-600">Application Number:</span>
                               <span>{result.PlanningPortalApplicationNumber}</span>
                               
-                              <span className="text-gray-600 whitespace-nowrap">Type:</span>
+                              <span className="text-gray-600">Type:</span>
                               <span>{result.ApplicationType}</span>
                               
-                              <span className="text-gray-600 whitespace-nowrap">Development:</span>
+                              <span className="text-gray-600">Development:</span>
                               <span>{cleanDevelopmentType(result.DevelopmentType)}</span>
                               
-                              <span className="text-gray-600 whitespace-nowrap">Status:</span>
-                              <span className="flex items-center gap-2">
-                                {result.ApplicationStatus}
-                                {result.ApplicationStatus === "Under Assessment" && <HourglassIcon className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Determined" && <CheckCircle2 className="h-4 w-4" />}
-                                {result.ApplicationStatus === "On Exhibition" && <Eye className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Additional Information Requested" && <FileQuestion className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Pending Lodgement" && <Clock className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Rejected" && <XCircle className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Pending Court Appeal" && <Scale className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Withdrawn" && <MinusCircle className="h-4 w-4" />}
-                                {result.ApplicationStatus === "Deferred Commencement" && <PauseCircle className="h-4 w-4" />}
-                              </span>
+                              <span className="text-gray-600">Status:</span>
+                              <span>{result.ApplicationStatus}</span>
                               
-                              {result.CostOfDevelopment && (
-                                <>
-                                  <span className="text-gray-600 whitespace-nowrap">Cost:</span>
-                                  <span>${Math.round(result.CostOfDevelopment).toLocaleString()}</span>
-                                </>
-                              )}
+                              <span className="text-gray-600">Number of New Dwellings:</span>
+                              <span>{result.NumberOfNewDwellings || 0}</span>
                               
-                              {result.NumberOfNewDwellings >= 0 && (
-                                <>
-                                  <span className="text-gray-600 whitespace-nowrap">Number of New Dwellings:</span>
-                                  <span>{result.NumberOfNewDwellings}</span>
-                                </>
-                              )}
+                              <span className="text-gray-600">Lodgement Date:</span>
+                              <span>{format(new Date(result.LodgementDate), 'dd MMMM yyyy')}</span>
                               
-                              {result.NumberOfStoreys > 0 && (
-                                <>
-                                  <span className="text-gray-600 whitespace-nowrap">Number of Storeys:</span>
-                                  <span>{result.NumberOfStoreys}</span>
-                                </>
-                              )}
-
-                              <span className="text-gray-600 whitespace-nowrap">Lodgement Date:</span>
-                              <span>{format(new Date(result.LodgementDate), 'd MMMM yyyy')}</span>
-
-                              {result.DeterminationDate && (
-                                <>
-                                  <span className="text-gray-600 whitespace-nowrap">Determination Date:</span>
-                                  <span>{format(new Date(result.DeterminationDate), 'd MMMM yyyy')}</span>
-                                  
-                                  <span className="text-gray-600 whitespace-nowrap">Time to Determination:</span>
-                                  <span>{formatDuration(result.LodgementDate, result.DeterminationDate)}</span>
-                                </>
-                              )}
+                              <span className="text-gray-600">Determination Date:</span>
+                              <span>{result.DeterminationDate ? format(new Date(result.DeterminationDate), 'dd MMMM yyyy') : '-'}</span>
                               
-                              {!result.DeterminationDate && (
-                                <>
-                                  <span className="text-gray-600 whitespace-nowrap">Time Elapsed:</span>
-                                  <span>{formatDuration(result.LodgementDate, new Date())}</span>
-                                </>
-                              )}
+                              <span className="text-gray-600">Time to Determination:</span>
+                              <span>{result.DeterminationDate ? formatDuration(result.LodgementDate, result.DeterminationDate) : '-'}</span>
                             </div>
                           </div>
                         </div>

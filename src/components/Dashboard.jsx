@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea, LineChart, Line } from 'recharts';
 import { supabase } from '@/lib/supabaseClient';
 import { councils as councilList } from '@/data/councilList';
+import { format, parseISO } from 'date-fns';
 
 const COLORS = [
   "#FF483B", "#2196F3", "#4CAF50", "#FFC107", "#9C27B0", 
@@ -21,21 +22,17 @@ const MIN_COST_THRESHOLD = 100000; // Minimum cost per dwelling threshold
 const DEFAULT_RESIDENTIAL_TYPES = [
   'House',
   'Dual occupancy',
-  'Attached dwelling',
-  'Semi-detached dwelling',
-  'Terrace housing'
 ];
 
 const ALL_RESIDENTIAL_TYPES = [
-  'Dwelling',
   'House',
   'Secondary dwelling',
   'Dual occupancy',
+  'Apartments',
   'Multi-dwelling housing',
   'Terrace housing',
-  'Semi-attached dwelling',
-  'Attached dwelling',
   'Semi-detached dwelling',
+  'Attached dwelling',
   'Shop top housing',
   'Boarding house',
   'Seniors housing',
@@ -45,15 +42,42 @@ const ALL_RESIDENTIAL_TYPES = [
   'Manufactured home',
   'Moveable dwelling',
   'Independent living',
-  'Manor house'
+  'Manor house',
+  'Medium density',
+  'Non-standard',
+  'Rural worker\'s dwelling'
 ];
 
 const DEFAULT_COUNCILS = [
   "Blacktown City Council",
-  "Central Coast Council",
-  "The Hills Shire Council",
-  "Parramatta City Council"
+  "Inner West Council",
+  "City of Parramatta Council"
 ];
+
+const loadingSpinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+`;
+
+const LoadingSpinner = () => (
+  <div className="flex flex-col items-center justify-center p-8">
+    <style>{loadingSpinnerStyles}</style>
+    <div className="loading-spinner"></div>
+    <p className="text-gray-500 mt-4">Loading data...</p>
+  </div>
+);
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -70,6 +94,8 @@ const Dashboard = () => {
   const [typeSearchTerm, setTypeSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const [lodgedFrom, setLodgedFrom] = useState('');
+  const [costOverTime, setCostOverTime] = useState([]);
 
   useEffect(() => {
     fetchLastUpdated();
@@ -81,8 +107,9 @@ const Dashboard = () => {
       fetchMedianStoreys();
       fetchDeterminationTimes();
       fetchTotalDwellings();
+      fetchCostOverTime();
     }
-  }, [selectedCouncils, selectedTypes]);
+  }, [selectedCouncils, selectedTypes, lodgedFrom]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -94,159 +121,180 @@ const Dashboard = () => {
   };
 
   const formatMonthYear = (dateString) => {
-    const [year, month] = dateString.split('-');
-    const date = new Date(year, parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short',
+      year: '2-digit'
+    });
   };
 
   const fetchLastUpdated = async () => {
-    const { data, error } = await supabase
-      .from('development_applications')
-      .select('fetched_at')
-      .order('fetched_at', { ascending: false })
-      .limit(1);
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        const { data, error } = await supabase
+          .from('development_applications')
+          .select('fetched_at')
+          .order('fetched_at', { ascending: false })
+          .limit(1);
 
-    if (!error && data && data.length > 0) {
-      const date = new Date(data[0].fetched_at);
-      const formattedDate = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-      setLastUpdated(formattedDate);
+        if (error) {
+          console.error('Error fetching last updated date:', error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          const date = new Date(data[0].fetched_at);
+          const formattedDate = date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
+          setLastUpdated(formattedDate);
+          return; // Success - exit the retry loop
+        }
+      } catch (error) {
+        console.error(`Attempt ${4 - retries} failed:`, error);
+        retries--;
+        
+        if (retries === 0) {
+          console.error('All retry attempts failed');
+          // Optionally set an error state here
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, 3 - retries) * 1000));
+      }
     }
   };
 
   const fetchAllResidentialCosts = async () => {
     try {
       setIsLoading(true);
-
       let allData = [];
-      let overallData = {};
       let page = 0;
       const pageSize = 1000;
       let hasMore = true;
 
-      // First, fetch overall medians for selected types
-      for (const type of selectedTypes) {
-        const { data, error } = await supabase
-          .from('development_applications')
-          .select('CostOfDevelopment, NumberOfNewDwellings')
-          .eq('clean_development_type', type)
-          .not('CostOfDevelopment', 'is', null)
-          .not('NumberOfNewDwellings', 'is', null)
-          .gt('CostOfDevelopment', 0)
-          .gt('NumberOfNewDwellings', 0);
-
-        if (!error && data) {
-          const costs = data
-            .map(row => parseFloat(row.CostOfDevelopment) / parseInt(row.NumberOfNewDwellings))
-            .filter(cost => !isNaN(cost) && cost >= MIN_COST_THRESHOLD)
-            .sort((a, b) => a - b);
-          
-          if (costs.length > 0) {
-            overallData[type] = calculateMedian(costs);
-          }
-        }
-      }
-
-      // Then fetch data for selected councils
       while (hasMore) {
-        const { data, error } = await supabase
-          .from('development_applications')
-          .select('clean_development_type, CostOfDevelopment, NumberOfNewDwellings, CouncilName')
-          .in('clean_development_type', selectedTypes)
-          .in('CouncilName', selectedCouncils)
-          .not('CostOfDevelopment', 'is', null)
-          .not('NumberOfNewDwellings', 'is', null)
-          .gt('CostOfDevelopment', 0)
-          .gt('NumberOfNewDwellings', 0)
-          .range(page * pageSize, (page + 1) * pageSize - 1);
+        try {
+          const { data, error, count } = await supabase
+            .from('development_applications')
+            .select('clean_development_type, cost_of_development, number_of_new_dwellings, council_name', { count: 'exact' })
+            .in('clean_development_type', selectedTypes)
+            .in('council_name', selectedCouncils)
+            .not('cost_of_development', 'is', null)
+            .not('number_of_new_dwellings', 'is', null)
+            .gt('cost_of_development', 0)
+            .gt('number_of_new_dwellings', 0)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) {
-          console.error('Error fetching residential costs:', error);
-          return;
-        }
+          if (error) throw error;
 
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          page++;
-          hasMore = data.length === pageSize;
-        } else {
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            page++;
+            hasMore = data.length === pageSize;
+            
+            // Log progress
+            console.log(`Fetched page ${page}, got ${data.length} records. Total so far: ${allData.length}`);
+          } else {
+            hasMore = false;
+          }
+        } catch (error) {
+          console.error(`Error fetching page ${page}:`, error);
           hasMore = false;
         }
       }
 
-      const costsByTypeAndCouncil = allData.reduce((acc, curr) => {
-        const cost = parseFloat(curr.CostOfDevelopment);
-        const dwellings = parseInt(curr.NumberOfNewDwellings);
-        
-        if (isNaN(cost) || cost <= 0 || isNaN(dwellings) || dwellings <= 0) {
-          return acc;
-        }
-
-        const costPerDwelling = cost / dwellings;
-        
-        // Skip if cost per dwelling is below threshold
-        if (costPerDwelling < MIN_COST_THRESHOLD) {
-          return acc;
-        }
-
-        const key = curr.clean_development_type;
-
-        if (!acc[key]) {
-          acc[key] = {
-            type: key,
-            count: 0
-          };
-          selectedCouncils.forEach(council => {
-            acc[key][council] = [];
-            acc[key][`${council}Count`] = 0;
-          });
-        }
-
-        acc[key][curr.CouncilName].push(costPerDwelling);
-        acc[key][`${curr.CouncilName}Count`]++;
-        acc[key].count++;
-
+      // Debug: Log initial data counts per council
+      const initialCounts = selectedCouncils.reduce((acc, council) => {
+        acc[council] = allData.filter(row => row.council_name === council).length;
         return acc;
       }, {});
+      console.log('Initial data counts per council:', initialCounts);
 
-      const chartData = Object.values(costsByTypeAndCouncil).map(item => {
+      // Debug: Log unique development types found
+      const uniqueTypes = [...new Set(allData.map(row => row.clean_development_type))];
+      console.log('Unique development types found:', uniqueTypes);
+
+      // Process the data
+      const processedData = selectedTypes.map(type => {
+        // Filter data for this type
+        const typeData = allData.filter(row => row.clean_development_type === type);
+        
+        // Debug: Log data counts per council for this type
+        const typeCountsByCouncil = selectedCouncils.reduce((acc, council) => {
+          acc[council] = typeData.filter(row => row.council_name === council).length;
+          return acc;
+        }, {});
+        console.log(`Data counts for type ${type}:`, typeCountsByCouncil);
+
+        // Calculate overall median
+        const allCosts = typeData
+          .map(row => parseFloat(row.cost_of_development) / parseInt(row.number_of_new_dwellings))
+          .filter(cost => !isNaN(cost) && cost >= MIN_COST_THRESHOLD)
+          .sort((a, b) => a - b);
+        
         const result = {
-          type: item.type,
-          count: item.count,
-          overallMedian: overallData[item.type] || 0
+          type,
+          count: allCosts.length,
+          overallMedian: allCosts.length > 0 ? calculateMedian(allCosts) : 0
         };
 
+        // Calculate council-specific medians
         selectedCouncils.forEach(council => {
-          const costs = item[council];
-          if (costs.length > 0) {
-            const sortedCosts = costs.sort((a, b) => a - b);
-            result[council] = calculateMedian(sortedCosts);
-            result[`${council}Count`] = item[`${council}Count`];
-          } else {
-            result[council] = 0;
-            result[`${council}Count`] = 0;
-          }
+          const councilData = typeData.filter(row => row.council_name === council);
+          const councilCosts = councilData
+            .map(row => parseFloat(row.cost_of_development) / parseInt(row.number_of_new_dwellings))
+            .filter(cost => !isNaN(cost) && cost >= MIN_COST_THRESHOLD)
+            .sort((a, b) => a - b);
+
+          // Debug: Log filtering steps for each council
+          console.log(`${council} - ${type}:`, {
+            totalRecords: councilData.length,
+            afterCostThreshold: councilCosts.length,
+            medianCost: councilCosts.length > 0 ? calculateMedian(councilCosts) : 0
+          });
+
+          result[council] = councilCosts.length > 0 ? calculateMedian(councilCosts) : 0;
+          result[`${council}Count`] = councilCosts.length;
+          result.count += councilCosts.length;
         });
 
         return result;
-      }).sort((a, b) => {
+      });
+
+      // Sort by highest median cost
+      const sortedData = processedData.sort((a, b) => {
         const aMax = Math.max(...selectedCouncils.map(council => a[council] || 0));
         const bMax = Math.max(...selectedCouncils.map(council => b[council] || 0));
         return bMax - aMax;
       });
 
+      // Debug: Log final processed data
+      console.log('Final processed data:', sortedData.map(item => ({
+        type: item.type,
+        councils: selectedCouncils.reduce((acc, council) => {
+          acc[council] = {
+            median: item[council],
+            count: item[`${council}Count`]
+          };
+          return acc;
+        }, {})
+      })));
+
       setStats(prev => ({ 
         ...prev, 
-        residentialCosts: chartData,
-        overallMedians: overallData 
+        residentialCosts: sortedData
       }));
-      setIsLoading(false);
+
     } catch (error) {
       console.error('Error in fetchResidentialCosts:', error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -262,10 +310,10 @@ const Dashboard = () => {
       while (hasMore) {
         const { data, error } = await supabase
           .from('development_applications')
-          .select('clean_development_type, NumberOfStoreys, CouncilName')
+          .select('clean_development_type, number_of_storeys, council_name')
           .in('clean_development_type', selectedTypes)
-          .in('CouncilName', selectedCouncils)
-          .not('NumberOfStoreys', 'is', null)
+          .in('council_name', selectedCouncils)
+          .not('number_of_storeys', 'is', null)
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
@@ -298,14 +346,14 @@ const Dashboard = () => {
       const groupedData = {};
       allData.forEach(row => {
         const type = row.clean_development_type;
-        const council = row.CouncilName;
+        const council = row.council_name;
         if (!groupedData[type]) {
           groupedData[type] = {};
         }
         if (!groupedData[type][council]) {
           groupedData[type][council] = [];
         }
-        groupedData[type][council].push(row.NumberOfStoreys);
+        groupedData[type][council].push(row.number_of_storeys);
       });
 
       // Calculate medians
@@ -342,57 +390,37 @@ const Dashboard = () => {
     if (!lodgement || !determination) return null;
     const lodgeDate = new Date(lodgement);
     const determineDate = new Date(determination);
+    
+    // Ensure determination date is after lodgement date
+    if (determineDate < lodgeDate) {
+      console.warn('Invalid dates: determination date before lodgement date');
+      return null;
+    }
+    
     const diffTime = determineDate - lodgeDate;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : null;
+    return diffDays;
   };
 
   const fetchDeterminationTimes = async () => {
     try {
       setIsLoading(true);
-
       let allData = [];
-      let overallData = {};
       let page = 0;
       const pageSize = 1000;
       let hasMore = true;
 
-      // First, fetch overall medians for selected types
-      for (const type of selectedTypes) {
-        const { data, error } = await supabase
-          .from('development_applications')
-          .select('LodgementDate, DeterminationDate')
-          .eq('clean_development_type', type)
-          .not('LodgementDate', 'is', null)
-          .not('DeterminationDate', 'is', null);
-
-        if (!error && data) {
-          const times = data
-            .map(row => calculateDaysBetween(row.LodgementDate, row.DeterminationDate))
-            .filter(days => days !== null)
-            .sort((a, b) => a - b);
-          
-          if (times.length > 0) {
-            overallData[type] = calculateMedian(times);
-          }
-        }
-      }
-
-      // Then fetch data for selected councils
       while (hasMore) {
         const { data, error } = await supabase
           .from('development_applications')
-          .select('clean_development_type, LodgementDate, DeterminationDate, CouncilName')
+          .select('clean_development_type, lodgement_date, determination_date, council_name')
           .in('clean_development_type', selectedTypes)
-          .in('CouncilName', selectedCouncils)
-          .not('LodgementDate', 'is', null)
-          .not('DeterminationDate', 'is', null)
+          .in('council_name', selectedCouncils)
+          .not('lodgement_date', 'is', null)
+          .not('determination_date', 'is', null)
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) {
-          console.error('Error fetching determination times:', error);
-          return;
-        }
+        if (error) throw error;
 
         if (data && data.length > 0) {
           allData = [...allData, ...data];
@@ -403,51 +431,41 @@ const Dashboard = () => {
         }
       }
 
-      const timesByTypeAndCouncil = allData.reduce((acc, curr) => {
-        const days = calculateDaysBetween(curr.LodgementDate, curr.DeterminationDate);
-        if (days === null) return acc;
-
-        const key = curr.clean_development_type;
-
-        if (!acc[key]) {
-          acc[key] = {
-            type: key,
-            count: 0
-          };
-          selectedCouncils.forEach(council => {
-            acc[key][council] = [];
-            acc[key][`${council}Count`] = 0;
-          });
-        }
-
-        acc[key][curr.CouncilName].push(days);
-        acc[key][`${curr.CouncilName}Count`]++;
-        acc[key].count++;
-
-        return acc;
-      }, {});
-
-      const chartData = Object.values(timesByTypeAndCouncil).map(item => {
+      // Process the data
+      const processedData = selectedTypes.map(type => {
+        // Filter data for this type
+        const typeData = allData.filter(row => row.clean_development_type === type);
+        
+        // Calculate overall median
+        const allTimes = typeData
+          .map(row => calculateDaysBetween(row.lodgement_date, row.determination_date))
+          .filter(days => days !== null && days >= 0) // Ensure only valid positive days are included
+          .sort((a, b) => a - b);
+        
         const result = {
-          type: item.type,
-          count: item.count,
-          overallMedian: overallData[item.type] || 0
+          type,
+          count: 0,
+          overallMedian: allTimes.length > 0 ? calculateMedian(allTimes) : 0
         };
 
+        // Calculate council-specific medians
         selectedCouncils.forEach(council => {
-          const times = item[council];
-          if (times.length > 0) {
-            const sortedTimes = times.sort((a, b) => a - b);
-            result[council] = calculateMedian(sortedTimes);
-            result[`${council}Count`] = item[`${council}Count`];
-          } else {
-            result[council] = 0;
-            result[`${council}Count`] = 0;
-          }
+          const councilData = typeData.filter(row => row.council_name === council);
+          const councilTimes = councilData
+            .map(row => calculateDaysBetween(row.lodgement_date, row.determination_date))
+            .filter(days => days !== null && days >= 0) // Ensure only valid positive days are included
+            .sort((a, b) => a - b);
+
+          result[council] = councilTimes.length > 0 ? calculateMedian(councilTimes) : 0;
+          result[`${council}Count`] = councilTimes.length;
+          result.count += councilTimes.length;
         });
 
         return result;
-      }).sort((a, b) => {
+      });
+
+      // Sort by highest median time
+      const sortedData = processedData.sort((a, b) => {
         const aMax = Math.max(...selectedCouncils.map(council => a[council] || 0));
         const bMax = Math.max(...selectedCouncils.map(council => b[council] || 0));
         return bMax - aMax;
@@ -455,8 +473,9 @@ const Dashboard = () => {
 
       setStats(prev => ({ 
         ...prev, 
-        determinationTimes: chartData
+        determinationTimes: sortedData
       }));
+
     } catch (error) {
       console.error('Error in fetchDeterminationTimes:', error);
     } finally {
@@ -467,22 +486,20 @@ const Dashboard = () => {
   const fetchTotalDwellings = async () => {
     try {
       setIsLoading(true);
-
       let allData = [];
       let page = 0;
       const pageSize = 1000;
       let hasMore = true;
 
-      // Fetch data for selected councils and types
       while (hasMore) {
         const { data, error } = await supabase
           .from('development_applications')
-          .select('clean_development_type, PlanningPortalApplicationNumber, LodgementDate, NumberOfNewDwellings, CouncilName')
+          .select('clean_development_type, planning_portal_application_number, lodgement_date, number_of_new_dwellings, council_name')
           .in('clean_development_type', selectedTypes)
-          .in('CouncilName', selectedCouncils)
-          .not('NumberOfNewDwellings', 'is', null)
-          .not('LodgementDate', 'is', null)
-          .order('LodgementDate', { ascending: true })
+          .in('council_name', selectedCouncils)
+          .not('number_of_new_dwellings', 'is', null)
+          .not('lodgement_date', 'is', null)
+          .order('lodgement_date', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
@@ -502,15 +519,15 @@ const Dashboard = () => {
       // Track latest application versions and organize by month
       const latestApplications = new Map();
       allData.forEach(row => {
-        const appNumber = row.PlanningPortalApplicationNumber;
-        const currentDate = new Date(row.LodgementDate);
+        const appNumber = row.planning_portal_application_number;
+        const currentDate = new Date(row.lodgement_date);
         
         if (!latestApplications.has(appNumber) || 
-            currentDate > new Date(latestApplications.get(appNumber).lodgementDate)) {
+            currentDate > new Date(latestApplications.get(appNumber).lodgement_date)) {
           latestApplications.set(appNumber, {
-            lodgementDate: row.LodgementDate,
-            councilName: row.CouncilName,
-            dwellings: row.NumberOfNewDwellings
+            lodgement_date: row.lodgement_date,
+            council_name: row.council_name,
+            number_of_new_dwellings: row.number_of_new_dwellings
           });
         }
       });
@@ -524,9 +541,9 @@ const Dashboard = () => {
 
       // Sort applications by date and calculate cumulative totals
       Array.from(latestApplications.values())
-        .sort((a, b) => new Date(a.lodgementDate) - new Date(b.lodgementDate))
+        .sort((a, b) => new Date(a.lodgement_date) - new Date(b.lodgement_date))
         .forEach(app => {
-          const date = new Date(app.lodgementDate);
+          const date = new Date(app.lodgement_date);
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
           
           if (!monthlyData[monthKey]) {
@@ -536,8 +553,8 @@ const Dashboard = () => {
             };
           }
           
-          councilTotals[app.councilName] += app.dwellings;
-          monthlyData[monthKey][app.councilName] = councilTotals[app.councilName];
+          councilTotals[app.council_name] += app.number_of_new_dwellings;
+          monthlyData[monthKey][app.council_name] = councilTotals[app.council_name];
         });
 
       // Convert to array and sort by date
@@ -551,6 +568,119 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error in fetchTotalDwellings:', error);
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCostOverTime = async () => {
+    try {
+      setIsLoading(true);
+      let allData = [];
+
+      // Helper function to generate array of all months between two dates
+      const generateMonthRange = (startDate, endDate) => {
+        const months = [];
+        const currentDate = new Date(startDate);
+        const end = new Date(endDate);
+        
+        while (currentDate <= end) {
+          months.push(format(currentDate, 'yyyy-MM'));
+          currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+        return months;
+      };
+
+      // Fetch data for each selected type
+      for (const type of selectedTypes) {
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        let typeData = [];
+
+        while (hasMore) {
+          let query = supabase
+            .from('development_applications')
+            .select('clean_development_type, cost_of_development, number_of_new_dwellings, lodgement_date, council_name')
+            .eq('clean_development_type', type)
+            .in('council_name', selectedCouncils)
+            .not('cost_of_development', 'is', null)
+            .not('number_of_new_dwellings', 'is', null)
+            .not('lodgement_date', 'is', null)
+            .gt('cost_of_development', 0)
+            .gt('number_of_new_dwellings', 0)
+            .order('lodgement_date', { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+          if (lodgedFrom) {
+            query = query.gte('lodgement_date', `${lodgedFrom}T00:00:00Z`);
+          }
+
+          const { data, error } = await query;
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            typeData = [...typeData, ...data];
+            page++;
+            hasMore = data.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        if (typeData.length > 0) {
+          // Get date range
+          const startDate = lodgedFrom 
+            ? new Date(lodgedFrom) 
+            : new Date(Math.min(...typeData.map(d => new Date(d.lodgement_date))));
+          const endDate = new Date(Math.max(...typeData.map(d => new Date(d.lodgement_date))));
+          
+          // Generate all months in range
+          const allMonths = generateMonthRange(startDate, endDate);
+          
+          // Initialize data structure for all months and councils
+          const monthlyData = {};
+          allMonths.forEach(month => {
+            selectedCouncils.forEach(council => {
+              const key = `${month}-${council}`;
+              monthlyData[key] = {
+                month,
+                council,
+                costs: []
+              };
+            });
+          });
+
+          // Fill in actual data
+          typeData.forEach(record => {
+            const month = format(new Date(record.lodgement_date), 'yyyy-MM');
+            const costPerDwelling = parseFloat(record.cost_of_development) / parseInt(record.number_of_new_dwellings);
+            const key = `${month}-${record.council_name}`;
+            
+            if (monthlyData[key] && costPerDwelling >= MIN_COST_THRESHOLD) {
+              monthlyData[key].costs.push(costPerDwelling);
+            }
+          });
+
+          // Calculate medians and create final dataset
+          const processedData = Object.values(monthlyData)
+            .map(({ month, council, costs }) => ({
+              month: new Date(month).toISOString(),  // Store as ISO string
+              council,
+              type,
+              medianCost: costs.length > 0 ? calculateMedian(costs) : null
+            }))
+            .filter(item => item.medianCost !== null)
+            .sort((a, b) => new Date(a.month) - new Date(b.month));  // Ensure correct sorting
+
+          allData = [...allData, ...processedData];
+        }
+      }
+
+      setCostOverTime(allData);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error in fetchCostOverTime:', error);
       setIsLoading(false);
     }
   };
@@ -598,10 +728,31 @@ const Dashboard = () => {
           {payload.map((entry, index) => {
             const council = entry.dataKey;
             const count = entry.payload[`${council}Count`];
+            
             if (entry.value > 0) {
+              // Format monetary values
+              const formattedValue = entry.value >= 1000000
+                ? `$${(entry.value / 1000000).toFixed(1)}m`
+                : `$${(entry.value / 1000).toFixed(0)}k`;
+
+              // Format counts with commas
+              const formattedCount = count?.toLocaleString('en-US') || '0';
+              
+              // Special handling for NSW Median
+              if (council === 'overallMedian') {
+                const totalCount = entry.payload.count || 0;
+                const formattedTotalCount = totalCount.toLocaleString('en-US');
+                return (
+                  <p key={index} style={{ color: entry.color }}>
+                    NSW Median: {formattedValue} ({formattedTotalCount} developments)
+                  </p>
+                );
+              }
+
+              // Regular council entries
               return (
                 <p key={index} style={{ color: entry.color }}>
-                  {council}: {formatCurrency(entry.value)} ({count} developments)
+                  {council}: {formattedValue} ({formattedCount} developments)
                 </p>
               );
             }
@@ -622,6 +773,13 @@ const Dashboard = () => {
             const council = entry.dataKey;
             const count = entry.payload[`${council}Count`];
             if (entry.value > 0) {
+              if (council === "overallMedian") {
+                return (
+                  <p key={index} style={{ color: entry.color }}>
+                    NSW Median: {Math.round(entry.value)} days ({entry.payload.count?.toLocaleString()} applications)
+                  </p>
+                );
+              }
               return (
                 <p key={index} style={{ color: entry.color }}>
                   {council}: {Math.round(entry.value)} days ({count} applications)
@@ -661,8 +819,10 @@ const Dashboard = () => {
             if (entry.value > 0) {
               return (
                 <p key={index} style={{ color: entry.color }}>
-                  {entry.name}: {entry.value.toFixed(1)} storeys
-                  {entry.name === "NSW Median" && ` (${entry.payload.applicationCount} applications)`}
+                  {entry.name === "NSW Median" 
+                    ? `NSW Median: ${entry.value.toFixed(1)} storeys`
+                    : `${entry.name}: ${entry.value.toFixed(1)} storeys`
+                  }
                 </p>
               );
             }
@@ -675,24 +835,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 w-full">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">NSW Development Dashboard</h1>
-        <p className="text-gray-600 mb-1">Development Applications lodged in last 12 months</p>
+    <div className="h-screen flex flex-col">
+      {/* Fixed Query Section */}
+      <div className="bg-white border-b border-gray-200 p-6">
+        {/* Last Updated Text */}
         {lastUpdated && (
-          <p className="text-gray-600">
-            Data last updated {lastUpdated}
+          <p className="text-sm text-gray-500 mb-4">
+            Last updated: {lastUpdated}
           </p>
         )}
-      </div>
 
-      {/* Main Content Grid */}
-      <div className="flex flex-col gap-6">
-        {/* Left Sidebar Controls */}
-        <div className="bg-white rounded-lg shadow p-4">
+        {/* Controls Section - Updated to flex row */}
+        <div className="flex flex-row gap-6">
           {/* Council Selection */}
-          <div className="mb-6">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Councils
+            </label>
             <div className="flex items-center mb-2">
               <h3 className="text-lg font-semibold mr-2">Councils</h3>
               <button
@@ -745,8 +904,24 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Residential Type Selection */}
-          <div>
+          {/* Date Picker */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lodged From
+            </label>
+            <input
+              type="date"
+              value={lodgedFrom}
+              onChange={(e) => setLodgedFrom(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+
+          {/* Development Type Selection */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Development Types
+            </label>
             <div className="flex items-center mb-2">
               <h3 className="text-lg font-semibold mr-2">Residential Types</h3>
               <button
@@ -813,152 +988,329 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Side Charts Grid */}
-        <div className="flex flex-col space-y-6">
-          {/* Charts Grid */}
-          <div className="flex flex-col gap-6">
-            {/* Cost Chart */}
-            <div className="bg-white rounded-lg shadow p-4 h-[600px]">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold">Median Cost per Dwelling by Residential Type</h2>
-              </div>
-              <div className="h-[calc(100%-6rem)]">
-                {!isLoading && stats.residentialCosts.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={stats.residentialCosts}
-                      margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
-                    >
-                      <defs>
-                        <pattern id="nswMedianPattern" patternUnits="userSpaceOnUse" width="10" height="10">
-                          <rect width="10" height="10" fill="#FCD34D"/>
-                          <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
-                        </pattern>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="type"
-                        angle={-45}
-                        textAnchor="end"
-                        height={120}
-                        interval={0}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        tickFormatter={formatCurrency}
-                        width={100}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend 
-                        wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
-                        iconSize={10}
-                      />
-                      {selectedCouncils.map((council, index) => (
-                        <Bar
-                          key={council}
-                          dataKey={council}
-                          name={council}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                      <Bar
-                        dataKey="overallMedian"
-                        name="NSW Median"
-                        fill="url(#nswMedianPattern)"
-                        stroke="#B45309"
-                        strokeWidth={1}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    {isLoading ? "Loading data..." : "No data available"}
-                  </div>
-                )}
-              </div>
+      {/* Scrollable Charts Section */}
+      <div className="flex-1 overflow-auto p-6">
+        {/* Original Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Cost Chart */}
+          <div className="bg-white rounded-lg shadow p-4 h-[600px]">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Median Cost per Dwelling by Residential Type</h2>
             </div>
-
-            {/* Determination Time Chart */}
-            <div className="bg-white rounded-lg shadow p-4 h-[600px]">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold">Median Time to Determination by Residential Type</h2>
-              </div>
-              <div className="h-[calc(100%-6rem)]">
-                {!isLoading && stats.determinationTimes.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={stats.determinationTimes}
-                      margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
-                    >
-                      <defs>
-                        <pattern id="nswMedianTimePattern" patternUnits="userSpaceOnUse" width="10" height="10">
-                          <rect width="10" height="10" fill="#FCD34D"/>
-                          <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
-                        </pattern>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="type"
-                        angle={-45}
-                        textAnchor="end"
-                        height={120}
-                        interval={0}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        width={60}
-                        tick={{ fontSize: 11 }}
-                        label={{ 
-                          value: 'Days', 
-                          angle: -90, 
-                          position: 'insideLeft',
-                          offset: -5,
-                          style: { fontSize: 11 }
-                        }}
-                      />
-                      <Tooltip content={<CustomDeterminationTooltip />} />
-                      <Legend 
-                        wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
-                        iconSize={10}
-                      />
-                      {selectedCouncils.map((council, index) => (
-                        <Bar
-                          key={council}
-                          dataKey={council}
-                          name={council}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
+            <div className="h-[calc(100%-6rem)]">
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : stats.residentialCosts.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.residentialCosts}
+                    margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
+                  >
+                    <defs>
+                      <pattern id="nswMedianPattern" patternUnits="userSpaceOnUse" width="10" height="10">
+                        <rect width="10" height="10" fill="#FCD34D"/>
+                        <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
+                      </pattern>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="type"
+                      angle={-45}
+                      textAnchor="end"
+                      height={120}
+                      interval={0}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      tickFormatter={formatCurrency}
+                      width={100}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
+                      iconSize={10}
+                    />
+                    {selectedCouncils.map((council, index) => (
                       <Bar
-                        dataKey="overallMedian"
-                        name="NSW Median"
-                        fill="url(#nswMedianTimePattern)"
-                        stroke="#B45309"
-                        strokeWidth={1}
+                        key={council}
+                        dataKey={council}
+                        name={council}
+                        fill={COLORS[index % COLORS.length]}
                       />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    {isLoading ? "Loading data..." : "No data available"}
-                  </div>
-                )}
-              </div>
+                    ))}
+                    <Bar
+                      dataKey="overallMedian"
+                      name="NSW Median"
+                      fill="url(#nswMedianPattern)"
+                      stroke="#B45309"
+                      strokeWidth={1}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No data available for selected criteria
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Total Dwellings Chart */}
-            <div className="bg-white rounded-lg shadow p-4 h-[600px]">
+          {/* Determination Time Chart */}
+          <div className="bg-white rounded-lg shadow p-4 h-[600px]">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Median Time to Determination by Residential Type</h2>
+            </div>
+            <div className="h-[calc(100%-6rem)]">
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : stats.determinationTimes.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.determinationTimes}
+                    margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
+                  >
+                    <defs>
+                      <pattern id="nswMedianTimePattern" patternUnits="userSpaceOnUse" width="10" height="10">
+                        <rect width="10" height="10" fill="#FCD34D"/>
+                        <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
+                      </pattern>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="type"
+                      angle={-45}
+                      textAnchor="end"
+                      height={120}
+                      interval={0}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      width={60}
+                      tick={{ fontSize: 11 }}
+                      label={{ 
+                        value: 'Days', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -5,
+                        style: { fontSize: 11 }
+                      }}
+                    />
+                    <Tooltip content={<CustomDeterminationTooltip />} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
+                      iconSize={10}
+                    />
+                    {selectedCouncils.map((council, index) => (
+                      <Bar
+                        key={council}
+                        dataKey={council}
+                        name={council}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                    <Bar
+                      dataKey="overallMedian"
+                      name="NSW Median"
+                      fill="url(#nswMedianTimePattern)"
+                      stroke="#B45309"
+                      strokeWidth={1}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No data available for selected criteria
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Total Dwellings Chart */}
+          <div className="bg-white rounded-lg shadow p-4 h-[600px]">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Cumulative New Dwellings Over Time</h2>
+            </div>
+            <div className="h-[calc(100%-6rem)]">
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : stats.totalDwellings.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={stats.totalDwellings}
+                    margin={{ top: 20, right: 120, left: 40, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="month"
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={1}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={formatMonthYear}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => value.toLocaleString()}
+                      label={{ 
+                        value: 'Number of Dwellings', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -10,
+                        style: { 
+                          textAnchor: 'middle',
+                          fill: '#666',
+                          fontSize: 12
+                        }
+                      }}
+                      dx={-10}
+                      width={80}
+                    />
+                    <Tooltip 
+                      content={<CustomDwellingsTooltip />}
+                      formatter={(value) => value.toLocaleString()}
+                      labelFormatter={formatMonthYear}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
+                      iconSize={10}
+                    />
+                    {selectedCouncils.map((council, index) => {
+                      const lastDataPoint = stats.totalDwellings[stats.totalDwellings.length - 1]?.[council];
+                      return (
+                        <React.Fragment key={council}>
+                          <Line
+                            type="monotone"
+                            dataKey={council}
+                            name={council}
+                            stroke={COLORS[index % COLORS.length]}
+                            strokeWidth={2}
+                            dot={false}
+                          />
+                          {lastDataPoint && (
+                            <text
+                              x="100%"
+                              y={0}
+                              dx={10}
+                              dy={25 + (index * 20)}
+                              fill={COLORS[index % COLORS.length]}
+                              fontSize={12}
+                              textAnchor="start"
+                              className="animate-fadeIn"
+                            >
+                              {lastDataPoint.toLocaleString('en-US', {
+                                maximumFractionDigits: 0,
+                                useGrouping: true
+                              })}
+                            </text>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No data available for selected criteria
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Median Storeys Chart */}
+          <div className="bg-white rounded-lg shadow p-4 h-[600px]">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Median Number of Storeys by Residential Type</h2>
+            </div>
+            <div className="h-[calc(100%-6rem)]">
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : stats.medianStoreys.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.medianStoreys}
+                    margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
+                    height={500}
+                  >
+                    <defs>
+                      <pattern id="nswMedianStoreysPattern" patternUnits="userSpaceOnUse" width="10" height="10">
+                        <rect width="10" height="10" fill="#FCD34D"/>
+                        <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
+                      </pattern>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="type"
+                      angle={-45}
+                      textAnchor="end"
+                      height={120}
+                      interval={0}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      width={60}
+                      tick={{ fontSize: 11 }}
+                      label={{ 
+                        value: 'Storeys', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -5,
+                        style: { fontSize: 11 }
+                      }}
+                    />
+                    <Tooltip content={<CustomStoreysTooltip />} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
+                      iconSize={10}
+                    />
+                    {selectedCouncils.map((council, index) => (
+                      <Bar
+                        key={council}
+                        dataKey={council}
+                        name={council}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                    <Bar
+                      dataKey="overallMedian"
+                      name="NSW Median"
+                      fill="url(#nswMedianStoreysPattern)"
+                      stroke="#B45309"
+                      strokeWidth={1}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No data available for selected criteria
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Cost Over Time Charts - Full Width */}
+        {selectedTypes.map((type) => {
+          const typeData = costOverTime.filter(d => d.type === type);
+          const councils = [...new Set(typeData.map(d => d.council))];
+          
+          return (
+            <div key={type} className="bg-white rounded-lg shadow p-4 mb-6 h-[400px]">
               <div className="mb-4">
-                <h2 className="text-xl font-semibold">Cumulative New Dwellings Over Time</h2>
+                <h2 className="text-xl font-semibold">
+                  {type} - Median Cost per Dwelling Over Time
+                </h2>
               </div>
-              <div className="h-[calc(100%-6rem)]">
-                {!isLoading && stats.totalDwellings.length > 0 ? (
+              <div className="h-[calc(100%-4rem)]">
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : typeData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={stats.totalDwellings}
-                      margin={{ top: 20, right: 120, left: 40, bottom: 60 }}
+                      data={typeData}
+                      margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
@@ -967,138 +1319,72 @@ const Dashboard = () => {
                         textAnchor="end"
                         height={60}
                         interval={1}
-                        tick={{ fontSize: 11 }}
                         tickFormatter={formatMonthYear}
+                        allowDuplicatedCategory={false}
                       />
                       <YAxis
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) {
+                            return `$${(value / 1000000).toFixed(1)}m`;
+                          }
+                          return `$${(value / 1000).toFixed(0)}k`;
+                        }}
+                        label={{ 
+                          value: 'Median Cost per Dwelling', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          offset: -10,
+                          style: { 
+                            textAnchor: 'middle',
+                            fill: '#666',
+                            fontSize: 12
+                          }
+                        }}
+                        dx={-10}
                         width={80}
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => value.toLocaleString('en-US', {
-                          maximumFractionDigits: 0,
-                          notation: 'standard'
-                        })}
                       />
-                      <Tooltip 
-                        content={<CustomDwellingsTooltip />}
-                        formatter={(value) => value.toLocaleString()}
-                        labelFormatter={formatMonthYear}
+                      <Tooltip
+                        formatter={(value) => {
+                          if (value >= 1000000) {
+                            return [`$${(value / 1000000).toFixed(1)}m`, 'Median Cost'];
+                          }
+                          return [`$${(value / 1000).toFixed(0)}k`, 'Median Cost'];
+                        }}
+                        labelFormatter={(label) => `Date: ${formatMonthYear(label)}`}
                       />
                       <Legend 
-                        wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
-                        iconSize={10}
+                        verticalAlign="bottom" 
+                        align="center"
+                        layout="horizontal"
+                        wrapperStyle={{
+                          paddingTop: "20px",
+                          bottom: 0,
+                          fontSize: '12px'
+                        }}
                       />
-                      {selectedCouncils.map((council, index) => {
-                        const lastDataPoint = stats.totalDwellings[stats.totalDwellings.length - 1]?.[council];
-                        return (
-                          <React.Fragment key={council}>
-                            <Line
-                              type="monotone"
-                              dataKey={council}
-                              name={council}
-                              stroke={COLORS[index % COLORS.length]}
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                            {lastDataPoint && (
-                              <text
-                                x="100%"
-                                y={0}
-                                dx={10}
-                                dy={25 + (index * 20)}
-                                fill={COLORS[index % COLORS.length]}
-                                fontSize={12}
-                                textAnchor="start"
-                                className="animate-fadeIn"
-                              >
-                                {lastDataPoint.toLocaleString('en-US', {
-                                  maximumFractionDigits: 0,
-                                  useGrouping: true
-                                })}
-                              </text>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
+                      {councils.map((council, index) => (
+                        <Line
+                          key={council}
+                          type="monotone"
+                          data={typeData.filter(d => d.council === council)}
+                          dataKey="medianCost"
+                          name={council}
+                          stroke={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                          dot={false}
+                          strokeWidth={2}
+                        />
+                      ))}
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-500">
-                    {isLoading ? "Loading data..." : "No data available"}
+                    No data available for selected criteria
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Median Storeys Chart */}
-            <div className="bg-white rounded-lg shadow p-4 h-[600px]">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold">Median Number of Storeys by Residential Type</h2>
-              </div>
-              <div className="h-[calc(100%-6rem)]">
-                {!isLoading && stats.medianStoreys.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={stats.medianStoreys}
-                      margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
-                      height={500}
-                    >
-                      <defs>
-                        <pattern id="nswMedianStoreysPattern" patternUnits="userSpaceOnUse" width="10" height="10">
-                          <rect width="10" height="10" fill="#FCD34D"/>
-                          <path d="M-2,2 l4,-4 M0,10 l10,-10 M8,12 l4,-4" stroke="white" strokeWidth="2"/>
-                        </pattern>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="type"
-                        angle={-45}
-                        textAnchor="end"
-                        height={120}
-                        interval={0}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        width={60}
-                        tick={{ fontSize: 11 }}
-                        label={{ 
-                          value: 'Storeys', 
-                          angle: -90, 
-                          position: 'insideLeft',
-                          offset: -5,
-                          style: { fontSize: 11 }
-                        }}
-                      />
-                      <Tooltip content={<CustomStoreysTooltip />} />
-                      <Legend 
-                        wrapperStyle={{ paddingTop: "0px", fontSize: '12px' }}
-                        iconSize={10}
-                      />
-                      {selectedCouncils.map((council, index) => (
-                        <Bar
-                          key={council}
-                          dataKey={council}
-                          name={council}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                      <Bar
-                        dataKey="overallMedian"
-                        name="NSW Median"
-                        fill="url(#nswMedianStoreysPattern)"
-                        stroke="#B45309"
-                        strokeWidth={1}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    {isLoading ? "Loading data..." : "No data available"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
