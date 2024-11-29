@@ -213,6 +213,88 @@ async function shouldUpdateCouncil(councilName) {
   return shouldUpdate;
 }
 
+async function hasRecordChanged(existingRecord, newData) {
+  // Compare relevant fields to detect changes
+  const fieldsToCompare = [
+    'application_status',
+    'description',
+    'estimated_cost',
+    // Add other fields that might change
+  ];
+
+  return fieldsToCompare.some(field => 
+    existingRecord[field] !== newData[field]
+  );
+}
+
+async function updateDatabase() {
+  console.log('🚀 Starting database update process...');
+  
+  try {
+    // Get existing records that are not determined yet
+    const { data: existingRecords, error: fetchError } = await supabase
+      .from('development_applications')
+      .select('*')
+      .is('determination_date', null);
+
+    if (fetchError) throw fetchError;
+
+    // Create lookup map for faster searching
+    const existingRecordsMap = new Map(
+      existingRecords.map(record => [record.application_number, record])
+    );
+
+    // Fetch new data from source
+    const newData = await fetchNewApplicationData(); // Your existing fetch function
+
+    let updateCount = 0;
+    let skipCount = 0;
+    let insertCount = 0;
+
+    for (const newRecord of newData) {
+      const existingRecord = existingRecordsMap.get(newRecord.application_number);
+
+      if (existingRecord) {
+        // Record exists - check if it needs updating
+        if (await hasRecordChanged(existingRecord, newRecord)) {
+          const { error: updateError } = await supabase
+            .from('development_applications')
+            .update(newRecord)
+            .eq('application_number', newRecord.application_number);
+
+          if (updateError) {
+            console.error(`Error updating record ${newRecord.application_number}:`, updateError);
+            continue;
+          }
+          updateCount++;
+        } else {
+          skipCount++;
+        }
+      } else {
+        // New record - insert it
+        const { error: insertError } = await supabase
+          .from('development_applications')
+          .insert(newRecord);
+
+        if (insertError) {
+          console.error(`Error inserting record ${newRecord.application_number}:`, insertError);
+          continue;
+        }
+        insertCount++;
+      }
+    }
+
+    console.log('Update complete:');
+    console.log(`- ${updateCount} records updated`);
+    console.log(`- ${skipCount} records unchanged`);
+    console.log(`- ${insertCount} new records inserted`);
+
+  } catch (error) {
+    console.error('Failed to update database:', error);
+    process.exit(1);
+  }
+}
+
 async function main() {
   console.log('🚀 Starting database update process...');
   
