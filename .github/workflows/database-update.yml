@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs every day at 1 PM UTC, which is midnight in Sydney (UTC+11 during daylight saving)
     - cron: "0 13 * * *"
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
   update-database:
@@ -27,4 +27,8 @@ jobs:
         run: npm ci
 
       - name: Run database update
-        run: npm run update-db
+        run: |
+          echo "Testing Supabase connection..."
+          echo "URL exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' }}"
+          echo "Key exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' }}"
+          npm run update-db
