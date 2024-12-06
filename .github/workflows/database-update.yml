@@ -14,6 +14,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NODE_ENV: production
 
     steps:
       - uses: actions/checkout@v4
@@ -27,10 +28,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run database update
+      - name: Test Supabase Connection
         run: |
           echo "Testing Supabase connection..."
-          echo "URL exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' }}"
-          echo "Key exists: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' }}"
-          echo "Service Role Key exists: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}"
-          npm run update-db
+          echo "Environment check:"
+          echo "NEXT_PUBLIC_SUPABASE_URL length: ${#NEXT_PUBLIC_SUPABASE_URL}"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY length: ${#NEXT_PUBLIC_SUPABASE_ANON_KEY}"
+          echo "SUPABASE_SERVICE_ROLE_KEY length: ${#SUPABASE_SERVICE_ROLE_KEY}"
+          echo "NODE_ENV: $NODE_ENV"
+
+          # Test connection with a simple script
+          node -e "
+            const { createClient } = require('@supabase/supabase-js');
+            const supabase = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL,
+              process.env.SUPABASE_SERVICE_ROLE_KEY
+            );
+            async function testConnection() {
+              try {
+                const { data, error } = await supabase.from('development_applications').select('count').limit(1);
+                if (error) throw error;
+                console.log('✅ Supabase connection successful');
+              } catch (error) {
+                console.error('❌ Supabase connection failed:', error);
+                process.exit(1);
+              }
+            }
+            testConnection();
+          "
+
+      - name: Run database update
+        if: success()
+        run: npm run update-db
