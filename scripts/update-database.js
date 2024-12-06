@@ -6,10 +6,24 @@ import { councils } from '../src/data/councilList.js';
 
 dotenv.config();
 
-// Initialize Supabase client
+// Debug logging for environment variables
+console.log('Environment variables loaded:', {
+  VITE_API_URL: process.env.VITE_API_URL ? 'Set' : 'Not set',
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set'
+});
+
+// Initialize Supabase client with service role key
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -300,15 +314,35 @@ async function main() {
   
   // Test Supabase connection
   try {
+    console.log('Testing Supabase connection...');
+    console.log('Using URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    
     const { data, error } = await supabase
       .from('development_applications')
-      .select('count', { count: 'exact', head: true });
+      .select('*')
+      .limit(1);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase query error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+    
     console.log('✅ Connected to Supabase');
-    console.log(`Current record count: ${data || 0}`);
+    console.log('Sample record:', data[0]);
   } catch (error) {
-    console.error('Failed to connect to Supabase:', error);
+    console.error('Failed to connect to Supabase:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: error.stack
+    });
     return;
   }
 
