@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Large data files
+development-applications-*.csv
+*.csv
+!example.csv
