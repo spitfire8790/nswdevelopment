@@ -333,7 +333,7 @@ const Development = () => {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'PageSize': '5000',
+          'PageSize': '1000',
           'PageNumber': pageNumber.toString(),
           'filters': JSON.stringify({ filters: apiFilters })
         }
